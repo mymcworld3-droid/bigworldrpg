@@ -309,15 +309,16 @@
                 multiplier = 2.2; 
                 effectColor = 0xe67e22; 
                 
-                // 【精準面向向量】
-                // Three.js 預設模型正面朝向是 負Z 軸 (0, 0, -1)。
-                const forwardVector = new THREE.Vector3(0, 0, -1);
-                // 將角色當前的四元數旋轉矩陣套用到該向量，得到精準的「世界朝向向量」
+                // 【精準面向向量修正】
+                // 根據你目前組裝出來的模型外觀，它的實際正面朝向為正 Z 軸 (0, 0, 1)
+                const forwardVector = new THREE.Vector3(0, 0, 1);
+                
+                // 將角色目前的四元數旋轉矩陣套用到該向量，得到精準的「世界朝向向量」
                 forwardVector.applyQuaternion(playerGroup.quaternion);
                 forwardVector.y = 0; // 鎖定水平面
                 forwardVector.normalize();
 
-                // 沿著角色正面方向向前噴射位移 3.5 個單位
+                // 沿著角色真正的正面方向向前爆發突進 3.5 個單位
                 playerGroup.position.addScaledVector(forwardVector, 3.5);
             }
 
