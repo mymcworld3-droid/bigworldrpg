@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>全球覺醒：階段一核心原型</title>
+    <style>
+        body { margin: 0; overflow: hidden; background: #000; font-family: sans-serif; }
+        #canvas-container { width: 100vw; height: 100vh; }
+        /* 跨平台 UI 控制區 */
+        #ui-layer { position: absolute; top: 10px; left: 10px; color: white; pointer-events: none; }
+        .btn { pointer-events: auto; background: rgba(0,0,0,0.6); color: #fff; border: 1px solid #fff; padding: 10px; margin: 5px; border-radius: 5px; cursor: pointer; }
+        #mobile-controls { position: absolute; bottom: 20px; right: 20px; display: flex; flex-direction: column; }
+        /* 傷害飄字樣式 */
+        .damage-text { position: absolute; font-weight: bold; font-size: 24px; pointer-events: none; animation: floatUp 0.8s ease-out forwards; }
+        .crit { color: #ff3333; font-size: 32px; text-shadow: 2px 2px #000; }
+        .normal { color: #ffffff; text-shadow: 1px 1px #000; }
+        @keyframes floatUp {
+            0% { transform: translateY(0) scale(1); opacity: 1; }
+            100% { transform: translateY(-100px) scale(0.8); opacity: 0; }
+        }
+    </style>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+</head>
+<body>
+
+    <div id="ui-layer">
+        <h3>全職覺醒 - 測試面板</h3>
+        <p>電腦端：WASD 移動，J / K / L 釋放技能</p>
+        <p>面板：ATK 50 | 暴擊率 30% | 天賦乘區 +50%</p>
+    </div>
+
+    <div id="mobile-controls">
+        <button class="btn" onclick="castSkill('A')">技能 A (普攻三連)</button>
+        <button class="btn" onclick="castSkill('B')">技能 B (突進斬)</button>
+        <button class="btn" onclick="castSkill('C')">技能 C (旋風斬)</button>
+    </div>
+
+    <div id="canvas-container"></div>
+
+    <script>
+        // --- 1. 基礎 3D 場景初始化 ---
+        const container = document.getElementById('canvas-container');
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x222222);
+
+        const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
+        camera.position.set(0, 15, 15);
+        camera.lookAt(0, 0, 0);
+
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        container.appendChild(renderer.domElement);
+
+        // 燈光
+        const light = new THREE.AmbientLight(0xffffff, 0.7);
+        scene.add(light);
+        const dirLight = new THREE.DirectionalLight(0xffffff, 0.5);
+        dirLight.position.set(10, 20, 10);
+        scene.add(dirLight);
+
+        // 地面 (陽春世界)
+        const gridHelper = new THREE.GridHelper(40, 40, 0x444444, 0x222222);
+        gridHelper.position.y = -0.5;
+        scene.add(gridHelper);
+
+        // --- 2. 角色與木頭人 (方塊人代替) ---
+        // 主角 (藍色方塊)
+        const playerGeo = new THREE.BoxGeometry(1, 1, 1);
+        const playerMat = new THREE.MeshLambertMaterial({ color: 0x00aaff });
+        const player = new THREE.Mesh(playerGeo, playerMat);
+        player.position.set(-5, 0, 0);
+        scene.add(player);
+
+        // 木頭人 (紅色圓柱)
+        const dummyGeo = new THREE.CylinderGeometry(0.5, 0.5, 1.5, 8);
+        const dummyMat = new THREE.MeshLambertMaterial({ color: 0xff3333 });
+        const dummy = new THREE.Mesh(dummyGeo, dummyMat);
+        dummy.position.set(2, 0.25, 0);
+        scene.add(dummy);
+
+        // 玩家資料統計 (符合階段一數據)
+        const playerData = {
+            atk: 50, critRate: 0.3, critDamage: 2.0,
+            talentMultiplier: 0.5, gearMultiplier: 0.2
+        };
+        const dummyData = { def: 10 };
+
+        // --- 3. 跨平台操作與移動邏輯 ---
+        const keys = { w:0, a:0, s:0, d:0 };
+        window.addEventListener('keydown', (e) => { if(keys.hasOwnProperty(e.key.toLowerCase())) keys[e.key.toLowerCase()] = 1; });
+        window.addEventListener('keyup', (e) => { if(keys.hasOwnProperty(e.key.toLowerCase())) keys[e.key.toLowerCase()] = 0; });
+        
+        // 鍵盤技能快捷鍵
+        window.addEventListener('keydown', (e) => {
+            if(e.key.toLowerCase() === 'j') castSkill('A');
+            if(e.key.toLowerCase() === 'k') castSkill('B');
+            if(e.key.toLowerCase() === 'l') castSkill('C');
+        });
+
+        // --- 4. 戰鬥與傷害核心 (連動 Node.js 後端) ---
+        function castSkill(type) {
+            let multiplier = 1.0;
+            let effectColor = 0xffffff;
+
+            if (type === 'A') { multiplier = 1.0; effectColor = 0xffaa00; } // 普攻
+            if (type === 'B') { multiplier = 1.5; effectColor = 0x00ffff; player.position.x += 2; } // 突進
+            if (type === 'C') { multiplier = 2.5; effectColor = 0xff00ff; } // 旋風斬
+
+            // 簡易碰撞距離檢查 (階段一範圍驗證)
+            const dist = player.position.distanceTo(dummy.position);
+            if (dist < 3.5) {
+                // 呼叫 Render 上的 Node.js 後端進行乘區傷害計算
+                fetch('/api/calculate-damage', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ attacker: playerData, defender: dummyData, skillMultiplier: multiplier })
+                })
+                .then(res => res.json())
+                .then(data => {
+                    createDamageText(data.damage, data.isCrit);
+                    createHitEffect(effectColor);
+                });
+            }
+        }
+
+        // 傷害飄字 UI 實作
+        function createDamageText(amount, isCrit) {
+            const div = document.createElement('div');
+            div.className = `damage-text ${isCrit ? 'crit' : 'normal'}`;
+            div.innerText = (isCrit ? 'CRIT! ' : '') + amount;
+            
+            // 將 3D 座標轉換為螢幕 2D 座標
+            const wp = new THREE.Vector3();
+            dummy.getWorldPosition(wp);
+            wp.y += 1.5; // 飄在頭頂
+            wp.project(camera);
+
+            const x = (wp.x * .5 + .5) * window.innerWidth;
+            const y = (-(wp.y * .5) + .5) * window.innerHeight;
+
+            div.style.left = `${x}px`;
+            div.style.top = `${y}px`;
+            document.body.appendChild(div);
+
+            setTimeout(() => div.remove(), 800);
+        }
+
+        // 簡易打擊視覺特效
+        function createHitEffect(color) {
+            const pGeo = new THREE.SphereGeometry(0.2, 4, 4);
+            const pMat = new THREE.MeshBasicMaterial({ color: color });
+            const p = new THREE.Mesh(pGeo, pMat);
+            p.position.copy(dummy.position);
+            p.position.y += 0.5;
+            scene.add(p);
+            setTimeout(() => scene.remove(p), 200);
+        }
+
+        // --- 5. 遊戲主迴圈 (Game Loop) ---
+        function animate() {
+            requestAnimationFrame(animate);
+
+            // 移動控制
+            const speed = 0.1;
+            if (keys.w) player.position.z -= speed;
+            if (keys.s) player.position.z += speed;
+            if (keys.a) player.position.x -= speed;
+            if (keys.d) player.position.x += speed;
+
+            // 鏡頭跟隨
+            camera.position.x = player.position.x;
+            camera.position.z = player.position.z + 15;
+
+            renderer.render(scene, camera);
+        }
+        animate();
+
+        // 響應視窗縮放 (支援手機旋轉螢幕)
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+    </script>
+</body>
+</html>
