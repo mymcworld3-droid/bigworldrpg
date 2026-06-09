@@ -31,17 +31,56 @@
         #joystick-zone { position: absolute; bottom: 40px; left: 40px; width: 120px; height: 120px; background: rgba(255,255,255,0.1); border: 2px solid rgba(255,255,255,0.3); border-radius: 50%; display: flex; align-items: center; justify-content: center; z-index: 10; }
         #joystick-knob { width: 50px; height: 50px; background: rgba(241, 196, 15, 0.8); border-radius: 50%; box-shadow: 0 0 10px rgba(241, 196, 15, 0.5); transform: translate(0px, 0px); pointer-events: none; }
 
-        /* 右側操作按鈕 */
-        #mobile-controls { position: absolute; bottom: 30px; right: 30px; display: flex; flex-direction: column; gap: 12px; z-index: 10; }
-        .btn { 
-            background: rgba(30,30,30,0.8); color: #fff; border: 1px solid #f1c40f; 
-            padding: 16px 28px; border-radius: 8px; cursor: pointer; font-size: 16px; 
-            box-shadow: 0 0 10px rgba(241, 196, 15, 0.3); transition: transform 0.1s;
-            /* 確保按鈕本身不繼承任何縮放影響 */
-            touch-action: manipulation;
+        /* 右側傳說對決式 圓形技能鍵位控制區 (以右下角為基準的相對定義) */
+        #mobile-controls { position: absolute; bottom: 30px; right: 30px; width: 220px; height: 220px; z-index: 10; pointer-events: none; }
+        .moba-btn {
+            position: absolute;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            font-weight: bold;
+            color: #ffffff;
+            /* 預設灰色半透明 */
+            background: rgba(80, 80, 80, 0.65);
+            border: 2px solid rgba(160, 160, 160, 0.5);
+            box-shadow: 0 4px 10px rgba(0,0,0,0.4);
+            cursor: pointer;
+            pointer-events: auto;
+            touch-action: none;
+            transition: background 0.1s, transform 0.05s;
         }
-        .btn:active { background: #f1c40f; color: #000; transform: scale(0.95); }
-        .btn-skill { background: rgba(142, 68, 173, 0.7); border-color: #8e44ad; }
+        /* 按下時的視覺反饋 */
+        .moba-btn:active {
+            background: rgba(241, 196, 15, 0.85) !important;
+            border-color: #f1c40f;
+            transform: scale(0.92);
+        }
+        /* 核心大普攻鍵 (偏右下) */
+        #btn-atk {
+            width: 76px;
+            height: 76px;
+            bottom: 10px;
+            right: 10px;
+            font-size: 16px;
+            background: rgba(100, 100, 100, 0.75);
+            border-color: rgba(200, 200, 200, 0.6);
+        }
+        /* 技能一 (普攻的左側) */
+        #btn-skill-a {
+            width: 54px;
+            height: 54px;
+            bottom: 20px;
+            right: 115px;
+        }
+        /* 技能二 (普攻的左上方，經典MOBA扇形交界點) */
+        #btn-skill-b {
+            width: 54px;
+            height: 54px;
+            bottom: 105px;
+            right: 85px;
+        }
         
         #camera-hint { position: absolute; bottom: 10px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.6); padding: 5px 15px; border-radius: 20px; pointer-events: none; font-size: 12px; opacity: 0.6; z-index: 10; }
 
@@ -59,20 +98,21 @@
 <body>
 
     <div id="ui-layer">
-        <h3>全職覺醒：方向與多點觸控修正</h3>
+        <h3>全職覺醒：MOBA戰鬥操作面板</h3>
         <p>測試職業：<span class="stat-text">神聖戰士 (Paladin)</span></p>
-        <p>修正：<span class="stat-text">面向100%正確</span> / <span class="stat-text">封鎖網頁雙擊與縮放</span></p>
+        <p>操作：<span class="stat-text">左手移動 / 右手施法（支援移動中同步釋放）</span></p>
     </div>
 
-    <div id="camera-hint">左手搖桿移動，右手按鈕，空白處滑動旋轉視角</div>
+    <div id="camera-hint">左手搖桿移動，右手圓形鍵施法，空白處滑動旋轉視角</div>
 
     <div id="joystick-zone">
         <div id="joystick-knob"></div>
     </div>
 
     <div id="mobile-controls">
-        <button class="btn btn-skill" onclick="castSkill('A')">普攻連擊 (J)</button>
-        <button class="btn btn-skill" style="background:rgba(230, 126, 34, 0.7); border-color:#e67e22;" onclick="castSkill('B')">朝向突進斬 (K)</button>
+        <div id="btn-atk" class="moba-btn">普攻</div>
+        <div id="btn-skill-a" class="moba-btn">技能A</div>
+        <div id="btn-skill-b" class="moba-btn">突進B</div>
     </div>
 
     <div id="canvas-container"></div>
