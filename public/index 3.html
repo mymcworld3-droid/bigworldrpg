@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, maximum-scale=1.0, minimum-scale=1.0, viewport-fit=cover">
+    <title>全球覺醒：神級職業 - 階段一完美手感原型</title>
+    <style>
+        /* CRITICAL: 防止任何手機端的選取、外觀、以及原生縮放手勢 */
+        html, body {
+            position: fixed; /* 鎖定視窗，防止 iOS 橡皮筋回彈 */
+            width: 100%;
+            height: 100%;
+            margin: 0;
+            overflow: hidden;
+            background: #111;
+            font-family: 'Segoe UI', sans-serif;
+            color: white;
+            -webkit-touch-callout: none;
+            -webkit-user-select: none;
+            user-select: none;
+            /* 禁用瀏覽器預設的手勢觸發（如雙指縮放、滑動回頁） */
+            touch-action: none; 
+        }
+        #canvas-container { width: 100vw; height: 100vh; position: absolute; top:0; left:0; z-index: 1; }
+        
+        /* 網文風格的 UI 控制區 */
+        #ui-layer { position: absolute; top: 10px; left: 10px; pointer-events: none; text-shadow: 2px 2px 2px #000; z-index: 10; }
+        .stat-text { color: #f1c40f; font-weight: bold; }
+        
+        /* 左側虛擬搖桿 UI */
+        #joystick-zone { position: absolute; bottom: 40px; left: 40px; width: 120px; height: 120px; background: rgba(255,255,255,0.1); border: 2px solid rgba(255,255,255,0.3); border-radius: 50%; display: flex; align-items: center; justify-content: center; z-index: 10; }
+        #joystick-knob { width: 50px; height: 50px; background: rgba(241, 196, 15, 0.8); border-radius: 50%; box-shadow: 0 0 10px rgba(241, 196, 15, 0.5); transform: translate(0px, 0px); pointer-events: none; }
+
+        /* 右側操作按鈕 */
+        #mobile-controls { position: absolute; bottom: 30px; right: 30px; display: flex; flex-direction: column; gap: 12px; z-index: 10; }
+        .btn { 
+            background: rgba(30,30,30,0.8); color: #fff; border: 1px solid #f1c40f; 
+            padding: 16px 28px; border-radius: 8px; cursor: pointer; font-size: 16px; 
+            box-shadow: 0 0 10px rgba(241, 196, 15, 0.3); transition: transform 0.1s;
+            /* 確保按鈕本身不繼承任何縮放影響 */
+            touch-action: manipulation;
+        }
+        .btn:active { background: #f1c40f; color: #000; transform: scale(0.95); }
+        .btn-skill { background: rgba(142, 68, 173, 0.7); border-color: #8e44ad; }
+        
+        #camera-hint { position: absolute; bottom: 10px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.6); padding: 5px 15px; border-radius: 20px; pointer-events: none; font-size: 12px; opacity: 0.6; z-index: 10; }
+
+        /* 傷害飄字樣式 */
+        .damage-text { position: absolute; font-weight: bold; font-family: 'Courier New', monospace; pointer-events: none; animation: floatUpAndFade 0.8s ease-out forwards; z-index: 100; }
+        .crit { color: #ff3333; font-size: 36px; text-shadow: 0 0 10px #ff0000; transform: scale(1.2); }
+        .normal { color: #ffffff; font-size: 26px; text-shadow: 0 0 5px #000; }
+        @keyframes floatUpAndFade {
+            0% { transform: translateY(0) scale(1); opacity: 1; }
+            100% { transform: translateY(-120px) scale(0.8); opacity: 0; }
+        }
+    </style>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+</head>
+<body>
+
+    <div id="ui-layer">
+        <h3>全職覺醒：方向與多點觸控修正</h3>
+        <p>測試職業：<span class="stat-text">神聖戰士 (Paladin)</span></p>
+        <p>修正：<span class="stat-text">面向100%正確</span> / <span class="stat-text">封鎖網頁雙擊與縮放</span></p>
+    </div>
+
+    <div id="camera-hint">左手搖桿移動，右手按鈕，空白處滑動旋轉視角</div>
+
+    <div id="joystick-zone">
+        <div id="joystick-knob"></div>
+    </div>
+
+    <div id="mobile-controls">
+        <button class="btn btn-skill" onclick="castSkill('A')">普攻連擊 (J)</button>
+        <button class="btn btn-skill" style="background:rgba(230, 126, 34, 0.7); border-color:#e67e22;" onclick="castSkill('B')">朝向突進斬 (K)</button>
+    </div>
+
+    <div id="canvas-container"></div>
+
+    <script src="game.js"></script>
+</body>
+</html>
