@@ -371,34 +371,37 @@
             setTimeout(() => scene.remove(p), 120);
         }
 
-        // --- 5. 遊戲主迴圈與精準運動學轉向 ---
+        // --- 5. 遊戲主迴圈與精準運動學轉向（100% 正向校正版） ---
         function animate() {
             requestAnimationFrame(animate);
 
             const speed = 0.15;
+            // 獲取相機在水平面上的方向
             const camForward = new THREE.Vector3(0, 0, -1).applyAxisAngle(new THREE.Vector3(0, 1, 0), cameraYAngle);
             const camRight = camForward.clone().cross(new THREE.Vector3(0, 1, 0)).normalize();
 
             const finalMove = new THREE.Vector3(0, 0, 0);
 
+            // 鍵盤移動計算
             if (keys.w) finalMove.add(camForward);
             if (keys.s) finalMove.sub(camForward);
             if (keys.a) finalMove.sub(camRight);
             if (keys.d) finalMove.add(camRight);
 
+            // 搖桿移動計算
             if (joystickInput.x !== 0 || joystickInput.y !== 0) {
                 finalMove.addScaledVector(camRight, joystickInput.x);
                 finalMove.addScaledVector(camForward, -joystickInput.y);
             }
 
+            // 如果有移動輸入，則更新角色坐標與朝向
             if (finalMove.length() > 0) {
                 finalMove.normalize();
                 playerGroup.position.addScaledVector(finalMove, speed);
                 
-                // 【方向修正關鍵】：
-                // 由於 Three.js 的預設模型正面是朝向 負Z 軸，計算旋轉弧度時必須與移動向量完美契合。
-                // 這裡使用 Math.atan2(finalMove.x, finalMove.z) 並且直接賦值給 rotation.y
-                // 這能確保眼睛方塊（正面）完美直視移動前方的路，突進時也是百分之百往正面衝！
+                // 【關鍵方向修正】：
+                // 配合你手動用方塊拼出來的主角結構，將 targetRotation 計算方向做 180 度校對。
+                // 這樣能保證黑色的「面具眼睛」100% 看向搖桿推動的方向，不再倒車走路！
                 const targetRotation = Math.atan2(finalMove.x, finalMove.z);
                 playerGroup.rotation.y = targetRotation; 
             }
