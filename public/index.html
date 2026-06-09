@@ -3,34 +3,33 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>全球覺醒：神級職業 - 階段一原型 (Sword & Camera)</title>
+    <title>全球覺醒：神級職業 - 階段一最終原型 (Joystick & Directional Dash)</title>
     <style>
         body { margin: 0; overflow: hidden; background: #111; font-family: 'Segoe UI', sans-serif; color: white; -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; }
         #canvas-container { width: 100vw; height: 100vh; }
         
         /* 網文風格的 UI 控制區 */
-        #ui-layer { position: absolute; top: 10px; left: 10px; pointer-events: none; text-shadow: 2px 2px 2px #000; }
-        .stat-text { color: #f1c40f; font-weight: bold; } /* 金色風格 */
+        #ui-layer { position: absolute; top: 10px; left: 10px; pointer-events: none; text-shadow: 2px 2px 2px #000; z-index: 10; }
+        .stat-text { color: #f1c40f; font-weight: bold; }
         
-        /* 跨平台操作按鈕 */
-        #mobile-controls { position: absolute; bottom: 30px; right: 30px; display: flex; flex-direction: column; gap: 10px; pointer-events: auto; }
+        /* 左側虛擬搖桿 UI */
+        #joystick-zone { position: absolute; bottom: 40px; left: 40px; width: 120px; height: 120px; background: rgba(255,255,255,0.1); border: 2px solid rgba(255,255,255,0.3); border-radius: 50%; display: flex; align-items: center; justify-content: center; touch-action: none; }
+        #joystick-knob { width: 50px; height: 50px; background: rgba(241, 196, 15, 0.8); border-radius: 50%; box-shadow: 0 0 10px rgba(241, 196, 15, 0.5); transform: translate(0px, 0px); }
+
+        /* 右側操作按鈕 */
+        #mobile-controls { position: absolute; bottom: 30px; right: 30px; display: flex; flex-direction: column; gap: 10px; pointer-events: auto; z-index: 10; }
         .btn { 
             background: rgba(30,30,30,0.8); color: #fff; border: 1px solid #f1c40f; 
             padding: 15px 25px; border-radius: 8px; cursor: pointer; font-size: 16px; 
             box-shadow: 0 0 10px rgba(241, 196, 15, 0.3); transition: all 0.2s;
         }
         .btn:active { background: #f1c40f; color: #000; transform: scale(0.95); }
-        .btn-skill { background: rgba(142, 68, 173, 0.7); border-color: #8e44ad; } /* 技能紫色風格 */
+        .btn-skill { background: rgba(142, 68, 173, 0.7); border-color: #8e44ad; }
         
-        /* 第三人稱視角控制提示 */
-        #camera-hint {
-            position: absolute; bottom: 30px; left: 50%; transform: translateX(-50%);
-            background: rgba(0,0,0,0.6); padding: 10px 20px; border-radius: 20px;
-            pointer-events: none; font-size: 14px; opacity: 0.8;
-        }
+        #camera-hint { position: absolute; bottom: 10px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.6); padding: 5px 15px; border-radius: 20px; pointer-events: none; font-size: 12px; opacity: 0.6; }
 
         /* 傷害飄字樣式 */
-        .damage-text { position: absolute; font-weight: bold; font-family: 'Courier New', monospace; pointer-events: none; animation: floatUpAndFade 0.8s ease-out forwards; }
+        .damage-text { position: absolute; font-weight: bold; font-family: 'Courier New', monospace; pointer-events: none; animation: floatUpAndFade 0.8s ease-out forwards; z-index: 100; }
         .crit { color: #ff3333; font-size: 36px; text-shadow: 0 0 10px #ff0000; transform: scale(1.2); }
         .normal { color: #ffffff; font-size: 26px; text-shadow: 0 0 5px #000; }
         @keyframes floatUpAndFade {
@@ -39,57 +38,54 @@
         }
     </style>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/PointerLockControls.js"></script>
 </head>
 <body>
 
     <div id="ui-layer">
-        <h3>全職覺醒：神級職業進化論</h3>
-        <p>職業：<span class="stat-text">神聖戰士 (Paladin) - 測試白老鼠</span></p>
-        <p>武器：<span class="stat-text">覺醒之劍 (SS級)</span></p>
-        <p>操作：WASD 移動，鼠標/手指滑動旋轉視角</p>
+        <h3>全職覺醒：最終原型驗證</h3>
+        <p>測試職業：<span class="stat-text">神聖戰士 (Paladin)</span></p>
+        <p>電腦操作：WASD 移動，J 普攻，K 朝向突進</p>
+        <p>手持端：左手搖桿移動，右手釋放技能，螢幕空白處滑動旋轉視角</p>
     </div>
 
-    <div id="camera-hint">滑動屏幕或鼠標旋轉視角</div>
+    <div id="camera-hint">滑動螢幕空白處可調整第三人稱視角</div>
+
+    <div id="joystick-zone">
+        <div id="joystick-knob"></div>
+    </div>
 
     <div id="mobile-controls">
-        <button class="btn" onclick="toggleLock()">鎖定/解鎖視角</button>
-        <button class="btn btn-skill" onclick="castSkill('A')">普攻(J)</button>
-        <button class="btn btn-skill" onclick="castSkill('B')">突進(K)</button>
+        <button class="btn btn-skill" onclick="castSkill('A')">普攻連擊 (J)</button>
+        <button class="btn btn-skill" style="background:rgba(230, 126, 34, 0.7); border-color:#e67e22;" onclick="castSkill('B')">面向突進斬 (K)</button>
     </div>
 
     <div id="canvas-container"></div>
 
     <script>
-        // --- 1. 基礎 3D 場景與神級視覺 ---
+        // --- 1. 基礎 3D 場景初始化 ---
         const container = document.getElementById('canvas-container');
         const scene = new THREE.Scene();
         scene.background = new THREE.Color(0x1a1a1a);
-        scene.fog = new THREE.Fog(0x1a1a1a, 20, 50); // 添加霧氣，增強空間感
+        scene.fog = new THREE.Fog(0x1a1a1a, 20, 50);
 
         const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
-        // 相機預設在主角後上方 (第三人稱視角初期)
         camera.position.set(0, 5, 8);
 
         const renderer = new THREE.WebGLRenderer({ antialias: true });
         renderer.setSize(window.innerWidth, window.innerHeight);
-        renderer.shadowMap.enabled = true; // 啟用陰影，增加真實感
+        renderer.shadowMap.enabled = true;
         container.appendChild(renderer.domElement);
 
-        // 燈光：增強「神級」感
+        // 燈光與環境
         const light = new THREE.AmbientLight(0xffffff, 0.5);
         scene.add(light);
         const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
         dirLight.position.set(15, 30, 15);
         dirLight.castShadow = true;
-        dirLight.shadow.mapSize.width = 1024;
-        dirLight.shadow.mapSize.height = 1024;
         scene.add(dirLight);
 
-        // 地面 (陽春世界，但帶陰影)
-        const planeGeo = new THREE.PlaneGeometry(100, 100);
-        const planeMat = new THREE.MeshLambertMaterial({ color: 0x333333 });
-        const ground = new THREE.Mesh(planeGeo, planeMat);
+        // 地面
+        const ground = new THREE.Mesh(new THREE.PlaneGeometry(100, 100), new THREE.MeshLambertMaterial({ color: 0x333333 }));
         ground.rotation.x = -Math.PI / 2;
         ground.receiveShadow = true;
         scene.add(ground);
@@ -98,34 +94,26 @@
         gridHelper.position.y = 0.01;
         scene.add(gridHelper);
 
-        // --- 2. 主角與神級長劍 ---
-        // 主角 (稍微精細一點的方塊人)
-        const playerGroup = new THREE.Group(); // 使用 Group 組合身體與武器
+        // --- 2. 玩家（手持金光長劍）與木頭人 ---
+        const playerGroup = new THREE.Group();
         const playerMat = new THREE.MeshLambertMaterial({ color: 0xdddddd });
         
-        // 身體
         const body = new THREE.Mesh(new THREE.BoxGeometry(0.8, 1.4, 0.5), playerMat);
         body.position.y = 0.7;
         body.castShadow = true;
         playerGroup.add(body);
         
-        // 頭 (陽春)
         const head = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.5, 0.5), playerMat);
         head.position.y = 1.65;
         head.castShadow = true;
         playerGroup.add(head);
 
-        // **給主角一把劍** (陽春，但有SSS級網文感)
+        // 核心要求：神級長劍
         const swordGroup = new THREE.Group();
-        
-        // 劍刃 (白色，帶發光特效)
-        const bladeGeo = new THREE.BoxGeometry(0.1, 1.2, 0.02);
-        const bladeMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
-        const blade = new THREE.Mesh(bladeGeo, bladeMat);
+        const blade = new THREE.Mesh(new THREE.BoxGeometry(0.1, 1.2, 0.02), new THREE.MeshBasicMaterial({ color: 0xffffff }));
         blade.position.y = 0.6;
         swordGroup.add(blade);
         
-        // 劍柄與格擋 (金色)
         const hiltMat = new THREE.MeshLambertMaterial({ color: 0xf1c40f });
         const guard = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.05, 0.05), hiltMat);
         swordGroup.add(guard);
@@ -133,117 +121,150 @@
         hilt.position.y = -0.15;
         swordGroup.add(hilt);
 
-        // 劍的「SSS級神級光芒」 (PointLight)
         const swordLight = new THREE.PointLight(0xf1c40f, 1, 3);
         swordLight.position.y = 0.6;
         swordGroup.add(swordLight);
 
-        // 將劍放到主角右手上 (右手稍微往前突)
-        swordGroup.rotation.x = -Math.PI / 2; // 調整劍刃朝向
+        swordGroup.rotation.x = -Math.PI / 2;
         swordGroup.rotation.z = Math.PI / 4; 
-        swordGroup.position.set(0.6, 0.8, -0.3); // 右手位置
+        swordGroup.position.set(0.6, 0.8, -0.3);
         playerGroup.add(swordGroup);
 
-        playerGroup.position.set(-5, 0, 0);
+        playerGroup.position.set(-3, 0, 0);
         scene.add(playerGroup);
 
-        // 木頭人 (保持陽春，作為對比)
-        const dummyGeo = new THREE.CylinderGeometry(0.5, 0.5, 1.5, 12);
-        const dummyMat = new THREE.MeshLambertMaterial({ color: 0xff4444 });
-        const dummy = new THREE.Mesh(dummyGeo, dummyMat);
+        // 木頭人
+        const dummy = new THREE.Mesh(new THREE.CylinderGeometry(0.5, 0.5, 1.5, 12), new THREE.MeshLambertMaterial({ color: 0xff4444 }));
         dummy.position.set(2, 0.75, 0);
         dummy.castShadow = true;
         scene.add(dummy);
 
-        // 玩家與木頭人數據 (符合階段一驗證)
-        const playerData = { atk: 100, critRate: 0.4, talentMultiplier: 0.5, gearMultiplier: 0.3 }; // SS級數據
-        const dummyData = { def: 15 };
+        const playerData = { atk: 100, critRate: 0.35, talentMultiplier: 0.5, gearMultiplier: 0.3 };
+        const dummyData = { def: 12 };
 
-        // --- 3. 第三人稱視角控制器 (手指與鼠標) ---
-        let isCameraLocked = false; // 是否鎖定滑動視角
-        let cameraYAngle = 0; // 視角偏航角 (Yaw)
-        let cameraXAngle = -Math.PI / 6; // 視角俯仰角 (Pitch)，預設往下看
-        const cameraDistance = 8; // 視角距離
+        // --- 3. 虛擬搖桿與鍵盤輸入狀態機制 ---
+        const keys = { w:0, a:0, s:0, d:0 };
+        const joystickInput = { x: 0, y: 0 }; // 儲存搖桿的偏離比率 (-1 到 1)
         
+        const joystickZone = document.getElementById('joystick-zone');
+        const joystickKnob = document.getElementById('joystick-knob');
+        let joystickActive = false;
+        let joystickStartPos = { x: 0, y: 0 };
+        const maxRadius = 50; // 搖桿最大移動半徑
+
+        joystickZone.addEventListener('touchstart', (e) => {
+            joystickActive = true;
+            const touch = e.touches[0];
+            const rect = joystickZone.getBoundingClientRect();
+            // 以搖桿中心點為基準
+            joystickStartPos = { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 };
+        });
+
+        window.addEventListener('touchmove', (e) => {
+            if (!joystickActive) return;
+            const touch = e.touches[0];
+            let deltaX = touch.clientX - joystickStartPos.x;
+            let deltaY = touch.clientY - joystickStartPos.y;
+            const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
+
+            // 限制半徑
+            if (distance > maxRadius) {
+                deltaX = (deltaX / distance) * maxRadius;
+                deltaY = (deltaY / distance) * maxRadius;
+            }
+
+            joystickKnob.style.transform = `translate(${deltaX}px, ${deltaY}px)`;
+            
+            // 轉化為標準移動輸入量 (-1 ~ 1)
+            joystickInput.x = deltaX / maxRadius;
+            joystickInput.y = deltaY / maxRadius;
+        }, { passive: false });
+
+        window.addEventListener('touchend', () => {
+            if (!joystickActive) return;
+            joystickActive = false;
+            joystickKnob.style.transform = `translate(0px, 0px)`;
+            joystickInput.x = 0;
+            joystickInput.y = 0;
+        });
+
+        // 鍵盤事件
+        window.addEventListener('keydown', (e) => { if(keys.hasOwnProperty(e.key.toLowerCase())) keys[e.key.toLowerCase()] = 1; });
+        window.addEventListener('keyup', (e) => { if(keys.hasOwnProperty(e.key.toLowerCase())) keys[e.key.toLowerCase()] = 0; });
+
+        // --- 4. 自由第三人稱視角滑動控制 ---
+        let cameraYAngle = 0; 
+        let cameraXAngle = -Math.PI / 6;
+        const cameraDistance = 8;
         let isDragging = false;
-        let previousMouseX = 0;
-        let previousMouseY = 0;
+        let prevMouseX = 0, prevMouseY = 0;
 
-        // 監聽鼠標/觸控事件
         function onPointerDown(e) {
+            // 排除點擊右側技能按鈕或左側搖桿的觸控
+            if (e.target.closest('#mobile-controls') || e.target.closest('#joystick-zone')) return;
             isDragging = true;
-            previousMouseX = e.clientX || (e.touches && e.touches[0].clientX);
-            previousMouseY = e.clientY || (e.touches && e.touches[0].clientY);
-            document.getElementById('camera-hint').style.opacity = 0.3; // 滑動時隱藏提示
+            prevMouseX = e.clientX || (e.touches && e.touches[0].clientX);
+            prevMouseY = e.clientY || (e.touches && e.touches[0].clientY);
         }
-
-        function onPointerUp() { isDragging = false; }
 
         function onPointerMove(e) {
-            if (!isDragging || isCameraLocked) return;
+            if (!isDragging) return;
+            const clientX = e.clientX || (e.touches && e.touches[0].clientX);
+            const clientY = e.clientY || (e.touches && e.touches[0].clientY);
+            
+            const deltaX = clientX - prevMouseX;
+            const deltaY = clientY - prevMouseY;
 
-            const x = e.clientX || (e.touches && e.touches[0].clientX);
-            const y = e.clientY || (e.touches && e.touches[0].clientY);
-            const deltaX = x - previousMouseX;
-            const deltaY = y - previousMouseY;
+            cameraYAngle -= deltaX * 0.007;
+            cameraXAngle -= deltaY * 0.007;
+            cameraXAngle = Math.max(-Math.PI / 2.3, Math.min(-Math.PI / 12, cameraXAngle));
 
-            // 旋轉靈敏度 (符合跨平台手感)
-            const sensitivity = 0.005;
-            cameraYAngle -= deltaX * sensitivity;
-            cameraXAngle -= deltaY * sensitivity;
-
-            // 俯仰角限制，防止相機繞過頭頂或地面
-            cameraXAngle = Math.max(-Math.PI / 2.5, Math.min(-Math.PI / 10, cameraXAngle));
-
-            previousMouseX = x;
-            previousMouseY = y;
+            prevMouseX = clientX;
+            prevMouseY = clientY;
         }
 
-        // 綁定事件 (滑鼠與觸控)
         container.addEventListener('mousedown', onPointerDown);
-        window.addEventListener('mouseup', onPointerUp);
+        window.addEventListener('mouseup', () => isDragging = false);
         container.addEventListener('mousemove', onPointerMove);
-        
         container.addEventListener('touchstart', onPointerDown);
-        window.addEventListener('touchend', onPointerUp);
-        container.addEventListener('touchmove', onPointerMove, { passive: false }); // 防止網頁滾動
+        window.addEventListener('touchend', () => isDragging = false);
+        container.addEventListener('touchmove', onPointerMove);
 
-        // 鎖定/解鎖視角按鈕功能
-        function toggleLock() {
-            isCameraLocked = !isCameraLocked;
-            const btn = document.querySelector('#mobile-controls .btn');
-            btn.innerText = isCameraLocked ? "解鎖視角 (滑動)" : "鎖定視角 (固定)";
-            btn.style.borderColor = isCameraLocked ? "#ff3333" : "#f1c40f";
-        }
-
-        // 更新第三人稱視角位置
         function updateCamera() {
             const playerPos = playerGroup.position;
-            
-            // 計算相機相對主角的位置
             const offsetX = cameraDistance * Math.sin(cameraYAngle) * Math.cos(cameraXAngle);
-            const offsetY = -cameraDistance * Math.sin(cameraXAngle); // 使用俯仰角計算 Y
+            const offsetY = -cameraDistance * Math.sin(cameraXAngle);
             const offsetZ = cameraDistance * Math.cos(cameraYAngle) * Math.cos(cameraXAngle);
 
-            // 設置相機位置
             camera.position.set(playerPos.x + offsetX, playerPos.y + offsetY, playerPos.z + offsetZ);
-            
-            // 相機看向主角頭部
             camera.lookAt(playerPos.x, playerPos.y + 1.2, playerPos.z);
         }
 
-        // --- 4. 戰鬥核心循環 (乘區計算) ---
+        // --- 5. 戰鬥與朝向位移技能核心邏輯 ---
         function castSkill(type) {
             let multiplier = 1.0;
-            let effectColor = 0xf1c40f; // 預設金色
+            let effectColor = 0xf1c40f;
 
-            if (type === 'A') { multiplier = 1.0; } // 普攻
-            if (type === 'B') { multiplier = 2.0; effectColor = 0xffffff; playerGroup.position.x += 3; } // 突進，SS級係數
+            if (type === 'A') { 
+                multiplier = 1.0; 
+            } 
+            else if (type === 'B') { 
+                multiplier = 2.0; 
+                effectColor = 0xe67e22; 
+                
+                // 核心優化：獲取角色當前正面面對的方向向量
+                const forwardVector = new THREE.Vector3(0, 0, -1);
+                forwardVector.applyQuaternion(playerGroup.quaternion); // 套用角色目前的旋轉角度
+                forwardVector.y = 0; // 鎖定 Y 軸，防止飛天或鑽地
+                forwardVector.normalize();
 
-            // 簡易碰撞範圍檢查
+                // 讓主角朝著他面向的方向爆發突進 3 個單位
+                playerGroup.position.addScaledVector(forwardVector, 3.2);
+            }
+
+            // 碰撞與後端傷害計算
             const dist = playerGroup.position.distanceTo(dummy.position);
             if (dist < 3.8) {
-                // 呼叫 Node.js 後端 (階段一的核心驗證)
                 fetch('/api/calculate-damage', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -253,31 +274,24 @@
                 .then(data => {
                     createDamageText(data.damage, data.isCrit);
                     createHitEffect(effectColor);
-                    
-                    // SS級武器視覺反饋：普攻時劍發出更強的光
-                    if (type === 'A') {
-                        swordLight.intensity = 5;
-                        setTimeout(() => swordLight.intensity = 1, 150);
-                    }
                 });
             }
         }
 
-        // 鍵盤技能綁定 (電腦端)
         window.addEventListener('keydown', (e) => {
             if(e.key.toLowerCase() === 'j') castSkill('A');
             if(e.key.toLowerCase() === 'k') castSkill('B');
         });
 
-        // 傷害飄字 UI
+        // 傷害飄字與特效
         function createDamageText(amount, isCrit) {
             const div = document.createElement('div');
             div.className = `damage-text ${isCrit ? 'crit' : 'normal'}`;
-            div.innerText = (isCrit ? 'CRIT! ' : '') + amount;
+            div.innerText = (isCrit ? '🔥 CRIT! ' : '') + amount;
             
             const wp = new THREE.Vector3();
             dummy.getWorldPosition(wp);
-            wp.y += 1.8; // 飄在頭頂更上方
+            wp.y += 1.8;
             wp.project(camera);
 
             const x = (wp.x * .5 + .5) * window.innerWidth;
@@ -286,59 +300,58 @@
             div.style.left = `${x}px`;
             div.style.top = `${y}px`;
             document.body.appendChild(div);
-
             setTimeout(() => div.remove(), 800);
         }
 
-        // 打擊視覺特效 (階段一：基礎 Hit Feedback)
         function createHitEffect(color) {
-            const pGeo = new THREE.TorusGeometry(0.5, 0.05, 8, 16);
-            const pMat = new THREE.MeshBasicMaterial({ color: color });
-            const p = new THREE.Mesh(pGeo, pMat);
+            const p = new THREE.Mesh(new THREE.TorusGeometry(0.6, 0.06, 8, 16), new THREE.MeshBasicMaterial({ color: color }));
             p.position.copy(dummy.position);
             p.position.y += 0.75;
             scene.add(p);
-            setTimeout(() => scene.remove(p), 100);
+            setTimeout(() => scene.remove(p), 120);
         }
 
-        // --- 5. 遊戲主迴圈 (Game Loop) ---
-        const keys = { w:0, a:0, s:0, d:0 };
-        window.addEventListener('keydown', (e) => { if(keys.hasOwnProperty(e.key.toLowerCase())) keys[e.key.toLowerCase()] = 1; });
-        window.addEventListener('keyup', (e) => { if(keys.hasOwnProperty(e.key.toLowerCase())) keys[e.key.toLowerCase()] = 0; });
-
+        // --- 6. 遊戲主迴圈與運動學處理 ---
         function animate() {
             requestAnimationFrame(animate);
 
-            // 移動控制 (WASD + 視角跟隨移動)
             const speed = 0.15;
-            // 計算相機方向的平面移動向量
-            const forward = new THREE.Vector3(0, 0, -1);
-            forward.applyAxisAngle(new THREE.Vector3(0, 1, 0), cameraYAngle); // 跟隨視角水平方向
-            const right = forward.clone().cross(new THREE.Vector3(0, 1, 0)).normalize();
+            
+            // 以相機目前的水平旋轉視角為基礎，計算出移動的基準前後左右向量
+            const camForward = new THREE.Vector3(0, 0, -1).applyAxisAngle(new THREE.Vector3(0, 1, 0), cameraYAngle);
+            const camRight = camForward.clone().cross(new THREE.Vector3(0, 1, 0)).normalize();
 
-            const moveDir = new THREE.Vector3(0, 0, 0);
-            if (keys.w) moveDir.add(forward);
-            if (keys.s) moveDir.sub(forward);
-            if (keys.a) moveDir.sub(right);
-            if (keys.d) moveDir.add(right);
+            const finalMove = new THREE.Vector3(0, 0, 0);
 
-            if (moveDir.length() > 0) {
-                moveDir.normalize().multiplyScalar(speed);
-                playerGroup.position.add(moveDir);
-                
-                // 簡易的角色轉向 (轉向相機前方)
-                const targetRotation = Math.atan2(forward.x, forward.z);
-                playerGroup.rotation.y = targetRotation + Math.PI; 
+            // A. 電腦端鍵盤處理
+            if (keys.w) finalMove.add(camForward);
+            if (keys.s) finalMove.sub(camForward);
+            if (keys.a) finalMove.sub(camRight);
+            if (keys.d) finalMove.add(camRight);
+
+            // B. 手機端搖桿處理 (若搖桿有輸入量，則與鍵盤疊加計算)
+            if (joystickInput.x !== 0 || joystickInput.y !== 0) {
+                // 搖桿 Y 對應相機前後，搖桿 X 對應相機左右
+                finalMove.addScaledVector(camRight, joystickInput.x);
+                finalMove.addScaledVector(camForward, -joystickInput.y);
             }
 
-            // 更新第三人稱視角 (關鍵：視角跟隨主角)
-            updateCamera();
+            // 如果有移動輸入，則更新角色坐標與朝向
+            if (finalMove.length() > 0) {
+                finalMove.normalize();
+                playerGroup.position.addScaledVector(finalMove, speed);
+                
+                // 讓主角平滑或立即轉向目前移動的 3D 目標方向
+                const targetRotation = Math.atan2(finalMove.x, finalMove.z);
+                playerGroup.rotation.y = targetRotation; 
+            }
 
+            // 更新跟隨相機
+            updateCamera();
             renderer.render(scene, camera);
         }
         animate();
 
-        // 響應視窗縮放
         window.addEventListener('resize', () => {
             camera.aspect = window.innerWidth / window.innerHeight;
             camera.updateProjectionMatrix();
