@@ -332,19 +332,15 @@ function createDamageText(targetMesh, amount, isCrit, colorHex) {
     div.className = 'damage-text';
     
     div.style.position = 'absolute';
-    div.style.color = colorHex; 
+    div.style.color = isCrit ? '#FF9900' : colorHex; 
     div.style.zIndex = '99999'; 
     div.style.pointerEvents = 'none';
     div.style.fontWeight = 'bold';
-    div.style.fontSize = isCrit ? '34px' : '26px';
+    div.style.fontSize = isCrit ? '46px' : '26px';
     div.style.fontFamily = 'monospace';
     div.style.textShadow = '2px 2px 0px #000';
     
-    if (isCrit) {
-        div.innerText = '💥 🔥 ' + amount;
-    } else {
-        div.innerText = '⚔️ ' + amount;
-    }
+    div.innerText = amount;
     
     const wp = new THREE.Vector3();
     targetMesh.getWorldPosition(wp);
@@ -363,8 +359,11 @@ function createDamageText(targetMesh, amount, isCrit, colorHex) {
 
         let opacity = 1.0;
         let currentY = y;
+        let velocity = 3.5; // 初始向上速度
+        
         const fadeInterval = setInterval(() => {
-            currentY -= 1.5;
+            currentY -= velocity;
+            velocity *= 0.92; // 每次執行將速度打折，達到逐漸變慢的效果
             opacity -= 0.04;
             div.style.top = `${currentY}px`;
             div.style.opacity = opacity;
