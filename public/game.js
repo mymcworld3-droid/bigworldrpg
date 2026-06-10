@@ -453,6 +453,9 @@ function animate() {
                 endPos: dashState.endPos, 
                 color: "#8b0000" 
             });
+
+            // 🔥 在衝刺結束且結算傷害時，產生對應的長條型路徑視覺特效
+            createDashPathEffect(dashState.startPos, dashState.endPos, 0xe67e22); //🔥
         }
     } 
     // B. 一般移動模式 (WASD / 虛擬搖桿)
