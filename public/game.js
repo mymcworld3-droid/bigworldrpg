@@ -302,7 +302,7 @@ function executeCombatSkill(type) {
         forwardVector.applyQuaternion(playerGroup.quaternion);
         
         // 🔥 將突進物理方向向左扭轉 90 度 (Math.PI / 2) 以符合要求
-        forwardVector.applyAxisAngle(new THREE.Vector3(0, 1, 0), Math.PI / 2); //🔥
+        forwardVector.applyAxisAngle(new THREE.Vector3(0, 1, 0));
         forwardVector.y = 0; 
         forwardVector.normalize();
 
