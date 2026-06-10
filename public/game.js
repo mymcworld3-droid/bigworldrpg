@@ -267,7 +267,7 @@ function executeCombatSkill(type) {
     if (dashState.isDashing) return; // 衝刺中禁止穿插其他技能
 
     if (type === 'A') {
-        calculateAreaDamage("sector", 3.25, 0.1, { angle: Math.PI / 2, color: "#8b0000" }); 
+        calculateAreaDamage("sector", 3.25, 0.1, { angle: Math.PI/2, color: "#8b0000" }); 
         createWeaponSwingEffect(0xf1c40f);
     } 
     else if (type === 'SKILL_A') {
@@ -296,7 +296,7 @@ function executeCombatSkill(type) {
 
         // 【核心修正 2：突進方向導正與非瞬移滑行初始化】
         // 取模型眼睛面對的基準方向 (0, 0, 1)
-        const forwardVector = new THREE.Vector3(0, 0, 1).applyQuaternion(playerGroup.quaternion);
+        const forwardVector = new THREE.Vector3(0, 0, -1).applyQuaternion(playerGroup.quaternion);
         forwardVector.y = 0; forwardVector.normalize();
 
         // 配置衝刺狀態機，交由 animate 主迴圈逐幀執行平滑滑行
