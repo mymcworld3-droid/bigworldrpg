@@ -401,7 +401,7 @@ function createWeaponSwingEffect(color) {
     swing.position.y += 0.8;
     swing.rotation.x = -Math.PI / 2;
     // 配合角色的 180 度補償調整視覺特效偏角
-    swing.rotation.z = playerGroup.rotation.y - Math.PI/2;
+    swing.rotation.z = playerGroup.rotation.y;
     scene.add(swing);
     setTimeout(() => scene.remove(swing), 150);
 }
