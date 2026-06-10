@@ -2,7 +2,6 @@
 document.addEventListener('gesturestart', function(e) { e.preventDefault(); });
 document.addEventListener('gesturechange', function(e) { e.preventDefault(); });
 document.addEventListener('gestureend', function(e) { e.preventDefault(); });
-// 阻止雙擊放大
 let lastTouchEnd = 0;
 document.addEventListener('touchend', function(e) {
     const now = (new Date()).getTime();
@@ -38,28 +37,35 @@ ground.receiveShadow = true;
 scene.add(ground);
 scene.add(new THREE.GridHelper(100, 100, 0x444444, 0x222222));
 
-// --- 2. 主角（改為異步載入外部人型 GLB 模型） ---
+// --- 2. 主角（外部人型 GLB 模型載入區，附帶除錯代碼） ---
 const playerGroup = new THREE.Group();
-scene.add(playerGroup); // 先把空容器加進場景，確保主迴圈運動學不會報錯
+scene.add(playerGroup); 
+
+// 先建立一個「備用臨時方塊人」，確保模型還沒載入完或下載失敗時，畫面上依然有東西可以操控、不至於卡死
+const fallbackCube = new THREE.Mesh(
+    new THREE.BoxGeometry(0.8, 1.6, 0.5), 
+    new THREE.MeshLambertMaterial({ color: 0x555555, transparent: true, opacity: 0.8 })
+);
+fallbackCube.position.y = 0.8;
+playerGroup.add(fallbackCube);
 
 // 建立 GLTF 載入器
 const loader = new THREE.GLTFLoader();
 
-// 載入你放在 public/models/ 裡面的模型
+// 【核心修正】：使用相對根目錄路徑 './model/paladin.glb' 確保與你上傳的資料夾名稱對齊
 loader.load(
-    'models/paladin.glb', 
+    './model/paladin.glb', 
     function (gltf) {
+        // 如果載入成功，移除備用的臨時方塊人
+        playerGroup.remove(fallbackCube);
+
         const model = gltf.scene;
         
-        // 1. 調整模型大小 (外部下載的模型通常很大或很小，用這行縮放)
-        // 如果載入後看不到人，請試著調整 0.5 或者是 2.0
-        model.scale.set(0.6, 0.6, 0.6); 
-        
-        // 2. 調整模型的初始面朝方向
-        // 如果發現載入人型後，「搖桿往前走，人卻橫著移動」，可以在這裡微調它的初始轉向
-        // model.rotation.y = Math.PI; 
+        // 調整模型大小與高度位置（許多網頁下載的模型中心點在腳底或非常大，需校正）
+        model.scale.set(1.0, 1.0, 1.0); 
+        model.position.y = 0; 
 
-        // 3. 讓模型開啟陰影接收與投射
+        // 遍歷模型的所有網格並啟用陰影
         model.traverse(function (node) {
             if (node.isMesh) {
                 node.castShadow = true;
@@ -67,23 +73,22 @@ loader.load(
             }
         });
 
-        // 4. 將載入完的人型模型放入我們原本的控制容器中
+        // 載入完的人型模型放入我們原本的控制容器中
         playerGroup.add(model);
-        
-        console.log("神級職業人型模型載入成功！");
+        console.log("🚀 [成功] 神級職業人型模型載入成功！");
     },
-    // 載入進度追蹤 (非必要，可留空)
     function (xhr) {
-        console.log((xhr.loaded / xhr.total * 100) + '% loaded');
+        if (xhr.total > 0) {
+            console.log(`⏳ 模型下載進度: ${(xhr.loaded / xhr.total * 100).toFixed(2)}%`);
+        }
     },
-    // 載入錯誤抓取
     function (error) {
-        console.error('模型載入失敗，請檢查路徑與格式：', error);
+        // 關鍵診斷：如果模型加載失敗，會在瀏覽器主控台印出詳細原因
+        console.error('❌ [錯誤] 模型載入失敗！請按 F12 檢查 Network 頁籤。錯誤詳情：', error);
     }
 );
 
-// 【保留原本附加在右手邊的神級長劍】
-// 提示：如果外部模型本身就自帶武器，你可以把這段移除
+// 【保留附加在右手邊的神級長劍】
 const swordGroup = new THREE.Group();
 const blade = new THREE.Mesh(new THREE.BoxGeometry(0.1, 1.2, 0.02), new THREE.MeshBasicMaterial({ color: 0xffffff }));
 blade.position.y = 0.6;
@@ -98,9 +103,9 @@ const swordLight = new THREE.PointLight(0xf1c40f, 1, 3);
 swordLight.position.y = 0.6;
 swordGroup.add(swordLight);
 
-// 精準擺放至控制容器的右手前側
 swordGroup.rotation.x = -Math.PI / 2;
 swordGroup.rotation.z = Math.PI / 4; 
+// 可以根據載入後人型手部的位置，微調下面這組 xyz 坐標讓劍連過去
 swordGroup.position.set(0.6, 0.8, -0.4);
 playerGroup.add(swordGroup);
 
@@ -122,8 +127,8 @@ const joystickInput = { x: 0, y: 0 };
 const joystickZone = document.getElementById('joystick-zone');
 const joystickKnob = document.getElementById('joystick-knob');
 
-let joystickTouchId = null;  // 記錄控制搖桿的那個手指 ID
-let cameraTouchId = null;    // 記錄控制相機旋轉的那個手指 ID
+let joystickTouchId = null;  
+let cameraTouchId = null;    
 let joystickStartPos = { x: 0, y: 0 };
 const maxRadius = 50;
 
@@ -131,23 +136,17 @@ let cameraYAngle = 0;
 let cameraXAngle = -Math.PI / 6;
 const cameraDistance = 8;
 let prevMouseX = 0, prevMouseY = 0;
-let isMouseDown = false; // PC端滑鼠專用
+let isMouseDown = false; 
 
-// 監聽整個畫面的 TouchStart
 window.addEventListener('touchstart', (e) => {
     for (let i = 0; i < e.changedTouches.length; i++) {
         const touch = e.changedTouches[i];
-        
-        // 如果點擊在右側按鈕區域，由按鈕綁定的獨立觸控監聽器處理，不干擾視角與搖桿
         if (touch.target.closest('#mobile-controls')) continue;
-
-        // 檢查是否點在搖桿區域且搖桿未被佔用
         if (touch.target.closest('#joystick-zone') && joystickTouchId === null) {
             joystickTouchId = touch.identifier;
             const rect = joystickZone.getBoundingClientRect();
             joystickStartPos = { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 };
         } 
-        // 否則，這根手指用來旋轉相機視角
         else if (cameraTouchId === null) {
             cameraTouchId = touch.identifier;
             prevMouseX = touch.clientX;
@@ -156,12 +155,9 @@ window.addEventListener('touchstart', (e) => {
     }
 }, { passive: false });
 
-// 監聽 TouchMove
 window.addEventListener('touchmove', (e) => {
     for (let i = 0; i < e.touches.length; i++) {
         const touch = e.touches[i];
-
-        // A. 處理搖桿手指移動
         if (touch.identifier === joystickTouchId) {
             let deltaX = touch.clientX - joystickStartPos.x;
             let deltaY = touch.clientY - joystickStartPos.y;
@@ -175,23 +171,18 @@ window.addEventListener('touchmove', (e) => {
             joystickInput.x = deltaX / maxRadius;
             joystickInput.y = deltaY / maxRadius;
         }
-
-        // B. 處理相機旋轉手指移動
         if (touch.identifier === cameraTouchId) {
             const deltaX = touch.clientX - prevMouseX;
             const deltaY = touch.clientY - prevMouseY;
-
             cameraYAngle -= deltaX * 0.008;
             cameraXAngle -= deltaY * 0.008;
             cameraXAngle = Math.max(-Math.PI / 2.3, Math.min(-Math.PI / 12, cameraXAngle));
-
             prevMouseX = touch.clientX;
             prevMouseY = touch.clientY;
         }
     }
 }, { passive: false });
 
-// 監聽 TouchEnd / TouchCancel
 const handleTouchEnd = (e) => {
     for (let i = 0; i < e.changedTouches.length; i++) {
         const touch = e.changedTouches[i];
@@ -209,7 +200,6 @@ const handleTouchEnd = (e) => {
 window.addEventListener('touchend', handleTouchEnd);
 window.addEventListener('touchcancel', handleTouchEnd);
 
-// PC端滑鼠事件相容
 container.addEventListener('mousedown', (e) => {
     if (e.target.closest('#mobile-controls') || e.target.closest('#joystick-zone')) return;
     isMouseDown = true;
@@ -226,7 +216,6 @@ window.addEventListener('mousemove', (e) => {
 });
 window.addEventListener('mouseup', () => isMouseDown = false);
 
-// 鍵盤事件
 window.addEventListener('keydown', (e) => { if(keys.hasOwnProperty(e.key.toLowerCase())) keys[e.key.toLowerCase()] = 1; });
 window.addEventListener('keyup', (e) => { if(keys.hasOwnProperty(e.key.toLowerCase())) keys[e.key.toLowerCase()] = 0; });
 
@@ -252,20 +241,13 @@ function castSkill(type) {
         multiplier = 2.2; 
         effectColor = 0xe67e22; 
         
-        // 【核心修正 1：突進位移朝向徹底對齊】
-        // 由於我們將模型轉向修正了 180 度，模型現在真正的正面在世界坐標系中變成了 正 Z 軸方向 (0, 0, 1)。
         const forwardVector = new THREE.Vector3(0, 0, 1);
-        
-        // 套用角色當前的四元數旋轉，即可得到 100% 與面部黑面具直視方向一致的向前突進向量
         forwardVector.applyQuaternion(playerGroup.quaternion);
         forwardVector.y = 0; 
         forwardVector.normalize();
-
-        // 沿著角色眼睛看去的方向，精準向前噴射突進
         playerGroup.position.addScaledVector(forwardVector, 3.5);
     }
 
-    // 傷害判定連動後端
     const dist = playerGroup.position.distanceTo(dummy.position);
     if (dist < 3.8) {
         fetch('/api/calculate-damage', {
@@ -281,12 +263,10 @@ function castSkill(type) {
     }
 }
 
-// 為 MOBA 按鈕綁定 touchstart 原生事件
 document.getElementById('btn-atk').addEventListener('touchstart', (e) => { e.preventDefault(); castSkill('A'); }, { passive: false });
 document.getElementById('btn-skill-a').addEventListener('touchstart', (e) => { e.preventDefault(); castSkill('A'); }, { passive: false });
 document.getElementById('btn-skill-b').addEventListener('touchstart', (e) => { e.preventDefault(); castSkill('B'); }, { passive: false });
 
-// PC 滑鼠相容點擊按鈕
 document.getElementById('btn-atk').addEventListener('mousedown', (e) => { e.stopPropagation(); castSkill('A'); });
 document.getElementById('btn-skill-a').addEventListener('mousedown', (e) => { e.stopPropagation(); castSkill('A'); });
 document.getElementById('btn-skill-b').addEventListener('mousedown', (e) => { e.stopPropagation(); castSkill('B'); });
@@ -296,7 +276,6 @@ window.addEventListener('keydown', (e) => {
     if(e.key.toLowerCase() === 'k') castSkill('B');
 });
 
-// 傷害飄字與特效
 function createDamageText(amount, isCrit) {
     const div = document.createElement('div');
     div.className = `damage-text ${isCrit ? 'crit' : 'normal'}`;
@@ -316,7 +295,6 @@ function createDamageText(amount, isCrit) {
     setTimeout(() => div.remove(), 800);
 }
 
-// 簡易打擊視覺特效
 function createHitEffect(color) {
     const p = new THREE.Mesh(new THREE.TorusGeometry(0.6, 0.06, 8, 16), new THREE.MeshBasicMaterial({ color: color }));
     p.position.copy(dummy.position);
@@ -349,10 +327,6 @@ function animate() {
         finalMove.normalize();
         playerGroup.position.addScaledVector(finalMove, speed);
         
-        // 【核心修正 2：角色模型轉向補償，消除倒車走路】
-        // 由於你手動用三個方塊組裝模型時，眼睛面具和長劍的拼裝朝向，相對於 Math.atan2 的世界弧度產生了 180 度的鏡像偏轉。
-        // 這裡我們在 targetRotation 計算完後直接加上 Math.PI (即 180 度)，強行將角色的外觀反轉回來。
-        // 這樣可以保證：搖桿往哪裡推，移動物理方向就往哪裡，且黑色的「面具眼睛」就 100% 直視該前進方向！
         const targetRotation = Math.atan2(finalMove.x, finalMove.z);
         playerGroup.rotation.y = targetRotation + Math.PI; 
     }
