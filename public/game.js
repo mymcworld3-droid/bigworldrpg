@@ -349,8 +349,13 @@ function createDamageText(targetMesh, amount, isCrit, colorHex) {
 
     const halfWidth = window.innerWidth / 2;
     const halfHeight = window.innerHeight / 2;
-    const x = (wp.x * halfWidth) + halfWidth;
-    const y = -(wp.y * halfHeight) + halfHeight;
+    
+    // 增加隨機偏移量 (介於 -20 到 +20 像素之間)
+    const randomOffsetX = (Math.random() - 0.5) * 40;
+    const randomOffsetY = (Math.random() - 0.5) * 40;
+    
+    const x = (wp.x * halfWidth) + halfWidth + randomOffsetX;
+    const y = -(wp.y * halfHeight) + halfHeight + randomOffsetY;
 
     if (x >= 0 && x <= window.innerWidth && y >= 0 && y <= window.innerHeight) {
         div.style.left = `${x}px`;
