@@ -398,6 +398,41 @@ function createWeaponSwingEffect(color) {
     setTimeout(() => scene.remove(swing), 150);
 }
 
+// 🔥 新增：突進技能的長條型顯示範圍特效
+function createDashPathEffect(startPos, endPos, color) { //🔥
+    const distance = startPos.distanceTo(endPos); //🔥
+    if (distance <= 0.1) return; //🔥
+    
+    // 🔥 建立長度等於突進距離、寬度為 3.6 (符合你傷害寬度1.8判定半徑) 的平面
+    const geo = new THREE.PlaneGeometry(3.6, distance); //🔥
+    const mat = new THREE.MeshBasicMaterial({ color: color, side: THREE.DoubleSide, transparent: true, opacity: 0.6 }); //🔥
+    const mesh = new THREE.Mesh(geo, mat); //🔥
+    
+    // 🔥 將平面放置於起點與終點的中心
+    mesh.position.copy(startPos).lerp(endPos, 0.5); //🔥
+    mesh.position.y = 0.1; //🔥 稍微抬高避免與地板重疊 (Z-fighting)
+    
+    // 🔥 將平面躺平，並計算旋轉使其完美對齊衝刺方向
+    mesh.rotation.x = -Math.PI / 2; //🔥
+    const dir = new THREE.Vector3().subVectors(endPos, startPos).normalize(); //🔥
+    mesh.rotation.z = -Math.atan2(dir.x, -dir.z); //🔥
+    
+    scene.add(mesh); //🔥
+    
+    // 🔥 特效淡出動畫
+    let opacity = 0.6; //🔥
+    const fadeInterval = setInterval(() => { //🔥
+        opacity -= 0.05; //🔥
+        mesh.material.opacity = opacity; //🔥
+        if (opacity <= 0) { //🔥
+            clearInterval(fadeInterval); //🔥
+            scene.remove(mesh); //🔥
+            mesh.geometry.dispose(); //🔥
+            mesh.material.dispose(); //🔥
+        } //🔥
+    }, 30); //🔥
+} //🔥
+
 // --- 7. 遊戲主迴圈與精準運動學轉向 ---
 function animate() {
     requestAnimationFrame(animate);
