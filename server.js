@@ -8,7 +8,7 @@ app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
 // 核心：乘區分離傷害計算 API
-app.post('/api/calculate-damage', (req, requireResponse) => {
+app.post('/api/calculate-damage', (req, res) => {
     const { attacker, defender, skillMultiplier } = req.body;
 
     // 基礎乘區：(攻擊 - 防禦) * 技能係數
