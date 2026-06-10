@@ -301,9 +301,8 @@ function executeCombatSkill(type) {
         const forwardVector = new THREE.Vector3(0, 0, -1);
         forwardVector.applyQuaternion(playerGroup.quaternion);
         
-        // 因上一輪突進發生偏差，這裡我們精準將突進物理方向【向右扭轉 90 度】(-Math.PI / 2)
-        // 這會使其與你校正好的左偏普攻範圍達成完美的 100% 同向共軸前衝！
-        forwardVector.applyAxisAngle(new THREE.Vector3(0, 1, 0), -Math.PI / 2);
+        // 🔥 將突進物理方向向左扭轉 90 度 (Math.PI / 2) 以符合要求
+        forwardVector.applyAxisAngle(new THREE.Vector3(0, 1, 0), Math.PI / 2); //🔥
         forwardVector.y = 0; 
         forwardVector.normalize();
 
@@ -312,8 +311,6 @@ function executeCombatSkill(type) {
         dashState.direction.copy(forwardVector);
         dashState.currentFrame = 0;
         dashState.startPos.copy(playerGroup.position);
-        
-        createWeaponSwingEffect(0xe67e22);
     }
 }
 
