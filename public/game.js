@@ -196,12 +196,15 @@ function updateCamera() {
     camera.lookAt(pPos.x, pPos.y + 1.2, pPos.z);
 }
 
-// --- 4. 核心重構：傷害範圍函式 (完全對齊普攻範圍與導正軸向) ---
+// --- 4. 傷害範圍函式 (完全包含往左偏 90 度校正) ---
 function calculateAreaDamage(shape, range, skillMultiplier, params = {}) {
-    // 【核心反轉校正 1】：既然你將視覺普攻範圍（createWeaponSwingEffect）修成了正向，
-    // 這說明角色的正面朝向向量必須改為原本的鏡像負 Z 軸 (0, 0, -1)，以便與你的視覺特效完美同步！
+    // 獲取角色原本的基準朝向 (負 Z 軸)
     const playerForward = new THREE.Vector3(0, 0, -1);
     playerForward.applyQuaternion(playerGroup.quaternion);
+    
+    // 【關鍵修改：傷害判定向左偏轉 90 度】
+    // 在 3D 歐幾里得空間中，逆時針往左轉為正角度，我們將其沿 Y 軸旋轉 +Math.PI / 2
+    playerForward.applyAxisAngle(new THREE.Vector3(0, 1, 0), Math.PI / 2);
     playerForward.y = 0;
     playerForward.normalize();
 
@@ -213,9 +216,9 @@ function calculateAreaDamage(shape, range, skillMultiplier, params = {}) {
 
         let isHit = false;
 
-        // A. 扇形範圍判定 (對齊導正後的前方)
+        // A. 扇形範圍判定 (此時已向左偏 90 度對齊)
         if (shape === "sector") {
-            const maxAngle = params.angle || Math.PI / 2; // 預設 90 度扇形
+            const maxAngle = params.angle || Math.PI / 2; // 90 度扇形
             if (distance <= range) {
                 const checkToEnemy = toEnemy.clone().normalize();
                 const dotProduct = playerForward.dot(checkToEnemy);
@@ -225,7 +228,7 @@ function calculateAreaDamage(shape, range, skillMultiplier, params = {}) {
                 }
             }
         }
-        // B. 直線路徑判定 (突進路徑碰撞)
+        // B. 直線路徑判定 (突進路徑隨動)
         else if (shape === "line" && params.startPos && params.endPos) {
             const lineVec = new THREE.Vector3().subVectors(params.endPos, params.startPos);
             lineVec.y = 0;
@@ -246,7 +249,6 @@ function calculateAreaDamage(shape, range, skillMultiplier, params = {}) {
             }
         }
 
-        // 碰撞命中，發送後端乘區 API 進行傷害結算
         if (isHit) {
             fetch('/api/calculate-damage', {
                 method: 'POST',
@@ -263,7 +265,7 @@ function calculateAreaDamage(shape, range, skillMultiplier, params = {}) {
     });
 }
 
-// --- 5. 技能釋放機制 (直接反轉突進方向) ---
+// --- 5. 技能釋放機制 (突進位移同步左偏 90 度對齊) ---
 function executeCombatSkill(type) {
     if (dashState.isDashing) return; 
 
@@ -295,10 +297,12 @@ function executeCombatSkill(type) {
         btn.style.background = "#333";
         setTimeout(() => { skillCooldowns.B = false; btn.style.background = "rgba(80, 80, 80, 0.65)"; }, 6000); 
 
-        // 【核心反轉校正 2：將突進位移朝向 180 度徹底回調反轉】
-        // 將方向由原本的 正Z (0,0,1) 修正為 負Z (0,0,-1)，精準對齊被你導正的普攻視覺方向
+        // 【關鍵修改：突進移動方向也同步向左扭轉 90 度】
         const forwardVector = new THREE.Vector3(0, 0, -1);
         forwardVector.applyQuaternion(playerGroup.quaternion);
+        
+        // 疊加向左偏轉 90 度的物理驅動向量，保證突進斬與修正後的普攻範圍完全重合前衝
+        forwardVector.applyAxisAngle(new THREE.Vector3(0, 1, 0), Math.PI / 2);
         forwardVector.y = 0; 
         forwardVector.normalize();
 
@@ -327,15 +331,14 @@ window.addEventListener('keydown', (e) => {
     if(e.key.toLowerCase() === 'l') executeCombatSkill('SKILL_B');
 });
 
-// --- 6. 核心修正：解決傷害飄字被 3D 畫布完全遮擋的層級投影算法 ---
+// --- 6. 傷害飄字層級完全解封 ---
 function createDamageText(targetMesh, amount, isCrit, colorHex) {
     const div = document.createElement('div');
     div.className = 'damage-text';
     
-    // 【關鍵樣式修復】：強制設定最高 z-index，擺脫 absolute 畫布的底層遮擋
     div.style.position = 'absolute';
     div.style.color = colorHex; 
-    div.style.zIndex = '99999'; // 確保飄在最上層
+    div.style.zIndex = '99999'; 
     div.style.pointerEvents = 'none';
     div.style.fontWeight = 'bold';
     div.style.fontSize = isCrit ? '34px' : '26px';
@@ -348,27 +351,21 @@ function createDamageText(targetMesh, amount, isCrit, colorHex) {
         div.innerText = '⚔️ ' + amount;
     }
     
-    // 獲取怪物的 3D 世界坐標
     const wp = new THREE.Vector3();
     targetMesh.getWorldPosition(wp);
-    wp.y += 2.0; // 飄在木頭人頭頂上方 2 個單位
-    
-    // 將 3D 座標投影到相機視野空間 (-1 到 1)
+    wp.y += 2.0; 
     wp.project(camera);
 
-    // 【防錯位矩陣映射公式】：精準轉化為網頁實體像素位置
     const halfWidth = window.innerWidth / 2;
     const halfHeight = window.innerHeight / 2;
     const x = (wp.x * halfWidth) + halfWidth;
     const y = -(wp.y * halfHeight) + halfHeight;
 
-    // 安全檢查：只有在玩家視野範圍內的數值才渲染，防止噴出網頁邊界
     if (x >= 0 && x <= window.innerWidth && y >= 0 && y <= window.innerHeight) {
         div.style.left = `${x}px`;
         div.style.top = `${y}px`;
         document.body.appendChild(div);
 
-        // 輕量級網頁原生平滑動畫：每 20 毫秒向上爬升並逐漸淡出
         let opacity = 1.0;
         let currentY = y;
         const fadeInterval = setInterval(() => {
@@ -390,6 +387,8 @@ function createHitEffect(pos, color) {
     setTimeout(() => scene.remove(p), 100);
 }
 
+// 【重要修正：普攻與技能視覺特效也向左修正 90 度】
+// 將原本的 rotation.y 偏置加上 Math.PI / 2，使畫面上閃耀的黃色/橙色圓弧完美對齊左側的真實範圍
 function createWeaponSwingEffect(color) {
     const swingGeo = new THREE.RingGeometry(0.1, 1.5, 16, 1, 0, Math.PI);
     const swingMat = new THREE.MeshBasicMaterial({ color: color, side: THREE.DoubleSide, transparent: true, opacity: 0.6 });
@@ -397,8 +396,8 @@ function createWeaponSwingEffect(color) {
     swing.position.copy(playerGroup.position);
     swing.position.y += 0.8;
     swing.rotation.x = -Math.PI / 2;
-    // 特效角度調整，使視覺圓弧與你校正好的方向完美一致
-    swing.rotation.z = playerGroup.rotation.y - Math.PI/2;
+    // 疊加 +Math.PI / 2 讓視覺與幾何判定在左側 90 度完全相乘
+    swing.rotation.z = playerGroup.rotation.y - Math.PI/2 + Math.PI/2; 
     scene.add(swing);
     setTimeout(() => scene.remove(swing), 150);
 }
@@ -407,7 +406,6 @@ function createWeaponSwingEffect(color) {
 function animate() {
     requestAnimationFrame(animate);
     
-    // A. 突進模式
     if (dashState.isDashing) {
         playerGroup.position.addScaledVector(dashState.direction, dashState.speed);
         dashState.currentFrame++;
@@ -416,7 +414,6 @@ function animate() {
             dashState.isDashing = false;
             dashState.endPos.copy(playerGroup.position);
             
-            // 突進結束，觸發直線割草判定
             calculateAreaDamage("line", 0, dashState.skillMultiplier, { 
                 startPos: dashState.startPos, 
                 endPos: dashState.endPos, 
@@ -424,7 +421,6 @@ function animate() {
             });
         }
     } 
-    // B. 一般移動模式 (WASD / 虛擬搖桿)
     else {
         const speed = 0.15;
         const camForward = new THREE.Vector3(0, 0, -1).applyAxisAngle(new THREE.Vector3(0, 1, 0), cameraYAngle);
@@ -445,7 +441,7 @@ function animate() {
             finalMove.normalize();
             playerGroup.position.addScaledVector(finalMove, speed);
             const targetRotation = Math.atan2(finalMove.x, finalMove.z);
-            playerGroup.rotation.y = targetRotation + Math.PI; // 保持 100% 正向轉向
+            playerGroup.rotation.y = targetRotation + Math.PI; 
         }
     }
 
