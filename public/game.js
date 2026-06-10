@@ -202,8 +202,7 @@ function calculateAreaDamage(shape, range, skillMultiplier, params = {}) {
     const playerForward = new THREE.Vector3(0, 0, -1);
     playerForward.applyQuaternion(playerGroup.quaternion);
     
-    // 【普攻受傷判定維持左偏 90 度】：與你上一輪正確的普攻視覺範圍完美融合
-    playerForward.applyAxisAngle(new THREE.Vector3(0, 1, 0), Math.PI / 2);
+    // 【修正】：移除 applyAxisAngle 的 90 度偏移，讓傷害判定回歸正前方
     playerForward.y = 0;
     playerForward.normalize();
 
