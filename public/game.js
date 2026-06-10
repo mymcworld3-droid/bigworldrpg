@@ -265,7 +265,6 @@ function calculateAreaDamage(shape, range, skillMultiplier, params = {}) {
     });
 }
 
-// --- 5. 技能釋放機制 ---
 function executeCombatSkill(type) {
     if (dashState.isDashing) return; 
 
@@ -301,8 +300,7 @@ function executeCombatSkill(type) {
         const forwardVector = new THREE.Vector3(0, 0, -1);
         forwardVector.applyQuaternion(playerGroup.quaternion);
         
-        // 🔥 將突進物理方向向左扭轉 90 度 (Math.PI / 2) 以符合要求
-        forwardVector.applyAxisAngle(new THREE.Vector3(0, 1, 0));
+        forwardVector.applyAxisAngle(new THREE.Vector3(0, 1, 0), 0);
         forwardVector.y = 0; 
         forwardVector.normalize();
 
