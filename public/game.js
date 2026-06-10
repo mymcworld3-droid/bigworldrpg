@@ -229,15 +229,16 @@ function castSkill(type) {
         multiplier = 2.2; 
         effectColor = 0xe67e22; 
         
-        // 【精準面向向量】
-        // Three.js 預設模型正面朝向是 負Z 軸 (0, 0, -1)。
-        const forwardVector = new THREE.Vector3(0, 0, -1);
-        // 將角色當前的四元數旋轉矩陣套用到該向量，得到精準的「世界朝向向量」
+        // 【核心修正 1：突進位移朝向徹底對齊】
+        // 由於我們將模型轉向修正了 180 度，模型現在真正的正面在世界坐標系中變成了 正 Z 軸方向 (0, 0, 1)。
+        const forwardVector = new THREE.Vector3(0, 0, 1);
+        
+        // 套用角色當前的四元數旋轉，即可得到 100% 與面部黑面具直視方向一致的向前突進向量
         forwardVector.applyQuaternion(playerGroup.quaternion);
-        forwardVector.y = 0; // 鎖定水平面
+        forwardVector.y = 0; 
         forwardVector.normalize();
 
-        // 沿著角色正面方向向前噴射位移 3.5 個單位
+        // 沿著角色眼睛看去的方向，精準向前噴射突進
         playerGroup.position.addScaledVector(forwardVector, 3.5);
     }
 
@@ -257,10 +258,9 @@ function castSkill(type) {
     }
 }
 
-// 【重要修正】：為 MOBA 按鈕綁定 touchstart 原生事件
-// 使用 touchstart 代替 onclick 避免被左手滑動中的搖桿事件阻斷，實現移動時同步流暢施法
+// 為 MOBA 按鈕綁定 touchstart 原生事件
 document.getElementById('btn-atk').addEventListener('touchstart', (e) => { e.preventDefault(); castSkill('A'); }, { passive: false });
-document.getElementById('btn-skill-a').addEventListener('touchstart', (e) => { e.preventDefault(); castSkill('A'); }, { passive: false }); // 技能A目前也是綁定A普攻測試
+document.getElementById('btn-skill-a').addEventListener('touchstart', (e) => { e.preventDefault(); castSkill('A'); }, { passive: false });
 document.getElementById('btn-skill-b').addEventListener('touchstart', (e) => { e.preventDefault(); castSkill('B'); }, { passive: false });
 
 // PC 滑鼠相容點擊按鈕
@@ -326,8 +326,12 @@ function animate() {
         finalMove.normalize();
         playerGroup.position.addScaledVector(finalMove, speed);
         
+        // 【核心修正 2：角色模型轉向補償，消除倒車走路】
+        // 由於你手動用三個方塊組裝模型時，眼睛面具和長劍的拼裝朝向，相對於 Math.atan2 的世界弧度產生了 180 度的鏡像偏轉。
+        // 這裡我們在 targetRotation 計算完後直接加上 Math.PI (即 180 度)，強行將角色的外觀反轉回來。
+        // 這樣可以保證：搖桿往哪裡推，移動物理方向就往哪裡，且黑色的「面具眼睛」就 100% 直視該前進方向！
         const targetRotation = Math.atan2(finalMove.x, finalMove.z);
-        playerGroup.rotation.y = targetRotation; 
+        playerGroup.rotation.y = targetRotation + Math.PI; 
     }
 
     updateCamera();
