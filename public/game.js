@@ -38,28 +38,52 @@ ground.receiveShadow = true;
 scene.add(ground);
 scene.add(new THREE.GridHelper(100, 100, 0x444444, 0x222222));
 
-// --- 2. 主角（手持長劍，正面方向明確） ---
+// --- 2. 主角（改為異步載入外部人型 GLB 模型） ---
 const playerGroup = new THREE.Group();
-const playerMat = new THREE.MeshLambertMaterial({ color: 0xdddddd });
+scene.add(playerGroup); // 先把空容器加進場景，確保主迴圈運動學不會報錯
 
-// 身體
-const body = new THREE.Mesh(new THREE.BoxGeometry(0.8, 1.4, 0.5), playerMat);
-body.position.y = 0.7;
-body.castShadow = true;
-playerGroup.add(body);
+// 建立 GLTF 載入器
+const loader = new THREE.GLTFLoader();
 
-// 頭
-const head = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.5, 0.5), playerMat);
-head.position.y = 1.65;
-head.castShadow = true;
-playerGroup.add(head);
+// 載入你放在 public/models/ 裡面的模型
+loader.load(
+    'models/paladin.glb', 
+    function (gltf) {
+        const model = gltf.scene;
+        
+        // 1. 調整模型大小 (外部下載的模型通常很大或很小，用這行縮放)
+        // 如果載入後看不到人，請試著調整 0.5 或者是 2.0
+        model.scale.set(0.6, 0.6, 0.6); 
+        
+        // 2. 調整模型的初始面朝方向
+        // 如果發現載入人型後，「搖桿往前走，人卻橫著移動」，可以在這裡微調它的初始轉向
+        // model.rotation.y = Math.PI; 
 
-// 增加眼睛/面具方便辨識正反面
-const eyes = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.1, 0.1), new THREE.MeshBasicMaterial({ color: 0x333333 }));
-eyes.position.set(0, 1.7, -0.25);
-playerGroup.add(eyes);
+        // 3. 讓模型開啟陰影接收與投射
+        model.traverse(function (node) {
+            if (node.isMesh) {
+                node.castShadow = true;
+                node.receiveShadow = true;
+            }
+        });
 
-// 神級長劍
+        // 4. 將載入完的人型模型放入我們原本的控制容器中
+        playerGroup.add(model);
+        
+        console.log("神級職業人型模型載入成功！");
+    },
+    // 載入進度追蹤 (非必要，可留空)
+    function (xhr) {
+        console.log((xhr.loaded / xhr.total * 100) + '% loaded');
+    },
+    // 載入錯誤抓取
+    function (error) {
+        console.error('模型載入失敗，請檢查路徑與格式：', error);
+    }
+);
+
+// 【保留原本附加在右手邊的神級長劍】
+// 提示：如果外部模型本身就自帶武器，你可以把這段移除
 const swordGroup = new THREE.Group();
 const blade = new THREE.Mesh(new THREE.BoxGeometry(0.1, 1.2, 0.02), new THREE.MeshBasicMaterial({ color: 0xffffff }));
 blade.position.y = 0.6;
@@ -74,16 +98,15 @@ const swordLight = new THREE.PointLight(0xf1c40f, 1, 3);
 swordLight.position.y = 0.6;
 swordGroup.add(swordLight);
 
-// 精準擺放至右手前側
+// 精準擺放至控制容器的右手前側
 swordGroup.rotation.x = -Math.PI / 2;
 swordGroup.rotation.z = Math.PI / 4; 
 swordGroup.position.set(0.6, 0.8, -0.4);
 playerGroup.add(swordGroup);
 
 playerGroup.position.set(-3, 0, 0);
-scene.add(playerGroup);
 
-// 木頭人
+// 木頭人保持不變
 const dummy = new THREE.Mesh(new THREE.CylinderGeometry(0.5, 0.5, 1.5, 12), new THREE.MeshLambertMaterial({ color: 0xff4444 }));
 dummy.position.set(2, 0.75, 0);
 dummy.castShadow = true;
