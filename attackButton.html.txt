@@ -1,0 +1,6 @@
+<div id="action-ui-zone">
+    <div id="skill-c-btn" class="skill-btn">旋風</div>
+    <div id="skill-b-btn" class="skill-btn">突進</div>
+    <div id="skill-a-btn" class="skill-btn">三連</div>
+    <div id="attack-btn">普攻</div>
+</div>
