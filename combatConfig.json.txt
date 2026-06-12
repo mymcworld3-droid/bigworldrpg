@@ -6,6 +6,8 @@
         "basic_attack": {
             "name": "普攻",
             "eligible_classes": ["warrior"],
+            "icon": "assets/icons/skill_basic_attack.png",
+            "cooldown": 0.0,
             "cast_time": 0.1,
             "recovery_time": 0.3,
             "vfx_effect": "vfx_warrior_slash",
@@ -28,6 +30,8 @@
         "charge": {
             "name": "突進",
             "eligible_classes": ["warrior"],
+            "icon": "assets/icons/skill_charge.png",
+            "cooldown": 5.0,
             "cast_time": 0.2,
             "recovery_time": 0.4,
             "vfx_effect": "vfx_warrior_charge",
@@ -49,6 +53,8 @@
         "vertical_slash": {
             "name": "垂直斬",
             "eligible_classes": ["warrior"],
+            "icon": "assets/icons/skill_vertical_slash.png",
+            "cooldown": 6.0,
             "cast_time": 0.5,
             "recovery_time": 0.6,
             "vfx_effect": "vfx_vertical_slash_line",
@@ -72,9 +78,12 @@
                     "damage_time": 0.6
                 }
             ]
-        },"combo_attack": {
+        },
+        "combo_attack": {
             "name": "三連擊",
             "eligible_classes": ["warrior"],
+            "icon": "assets/icons/skill_combo_attack.png",
+            "cooldown": 8.0,
             "cast_time": 0.9,
             "recovery_time": 0.3,
             "vfx_effect": "vfx_combo",
@@ -99,6 +108,8 @@
         "dash_slash": {
             "name": "突進斬",
             "eligible_classes": ["warrior"],
+            "icon": "assets/icons/skill_dash_slash.png",
+            "cooldown": 6.5,
             "cast_time": 0.3,
             "recovery_time": 0.4,
             "vfx_effect": "vfx_dash",
@@ -125,6 +136,8 @@
         "whirlwind": {
             "name": "旋風斬",
             "eligible_classes": ["warrior"],
+            "icon": "assets/icons/skill_whirlwind.png",
+            "cooldown": 12.0,
             "cast_time": 0.3,
             "recovery_time": 0.5,
             "vfx_effect": "vfx_tornado",
