@@ -12,7 +12,7 @@
             "recovery_time": 0.3,
             "vfx_effect": "vfx_warrior_slash",
             "stat_scaling": {
-                "strength": 0.1,
+                "strength": 0.8,
                 "hp": 0.0,
                 "defense": 0.0,
                 "spirit": 0.0
@@ -36,7 +36,7 @@
             "recovery_time": 0.4,
             "vfx_effect": "vfx_warrior_charge",
             "stat_scaling": {
-                "strength": 0.3,
+                "strength": 1.5,
                 "hp": 0.0,
                 "defense": 0.0,
                 "spirit": 0.0
@@ -50,35 +50,6 @@
                 }
             ]
         },
-        "vertical_slash": {
-            "name": "垂直斬",
-            "eligible_classes": ["warrior"],
-            "icon": "assets/icons/skill_vertical_slash.png",
-            "cooldown": 6.0,
-            "cast_time": 0.5,
-            "recovery_time": 0.6,
-            "vfx_effect": "vfx_vertical_slash_line",
-            "stat_scaling": {
-                "strength": 1.0,
-                "hp": 0.0,
-                "defense": 0.0,
-                "spirit": 0.0
-            },
-            "range_shapes": [
-                {
-                    "shape_type": "box",
-                    "offset": { "x": 0, "z": -1.5 },
-                    "dimensions": { "width": 1.2, "length": 3.0 },
-                    "damage_time": 0.5
-                },
-                {
-                    "shape_type": "circle",
-                    "offset": { "x": 0, "z": -3.0 },
-                    "radius": 2.5,
-                    "damage_time": 0.6
-                }
-            ]
-        },
         "combo_attack": {
             "name": "三連擊",
             "eligible_classes": ["warrior"],
@@ -88,7 +59,7 @@
             "recovery_time": 0.3,
             "vfx_effect": "vfx_combo",
             "stat_scaling": {
-                "strength": 0.1,
+                "strength": 0.85,
                 "hp": 0.0,
                 "defense": 0.0,
                 "spirit": 0.0
@@ -114,7 +85,7 @@
             "recovery_time": 0.4,
             "vfx_effect": "vfx_dash",
             "stat_scaling": {
-                "strength": 0.3,
+                "strength": 1.3,
                 "hp": 0.0,
                 "defense": 0.0,
                 "spirit": 0.0
@@ -142,7 +113,7 @@
             "recovery_time": 0.5,
             "vfx_effect": "vfx_tornado",
             "stat_scaling": {
-                "strength": 0.1,
+                "strength": 0.75,
                 "hp": 0.0,
                 "defense": 0.0,
                 "spirit": 0.0
@@ -160,6 +131,43 @@
         }
     },
     "monsters": {
-        "goblin": { "hp": 100, "strength": 100, "defense": 50, "spirit": 10 }
+        "goblin": { 
+            "hp": 150, 
+            "strength": 100, 
+            "defense": 65, 
+            "spirit": 10,
+            "equipped_skills": ["goblin_attack", "goblin_smash"] 
+        }
+    },
+    "monster_skills": {
+        "goblin_attack": {
+            "name": "哥布林敲擊",
+            "cast_time": 0.3,
+            "cooldown": 2.0,
+            "stat_scaling": { "strength": 1.1 },
+            "range_shapes": [
+                {
+                    "shape_type": "fan",
+                    "offset": { "x": 0, "z": 0 },
+                    "radius": 2.5,
+                    "angle": 120,
+                    "damage_time": 0.3
+                }
+            ]
+        },
+        "goblin_smash": {
+            "name": "哥布林蓄力砸",
+            "cast_time": 1.0,
+            "cooldown": 5.0,
+            "stat_scaling": { "strength": 1.35 },
+            "range_shapes": [
+                {
+                    "shape_type": "circle",
+                    "offset": { "x": 0, "z": -1.5 },
+                    "radius": 2.5,
+                    "damage_time": 1.0
+                }
+            ]
+        }
     }
 }
