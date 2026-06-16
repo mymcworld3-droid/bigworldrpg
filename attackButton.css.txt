@@ -2,8 +2,8 @@
     position: absolute;
     bottom: 20px;
     right: 20px;
-    width: 220px;
-    height: 220px;
+    width: 280px;  /* 擴大區域以容納更多按鈕 */
+    height: 280px;
     touch-action: none;
     pointer-events: none;
 }
@@ -54,6 +54,29 @@
     transform: scale(0.95);
 }
 
+/* 新增：輔助按鈕 (跳躍、衝刺) 樣式，稍微小一點 */
+.utility-btn {
+    width: 50px;
+    height: 50px;
+    background-color: rgba(150, 150, 150, 0.7);
+    border-radius: 50%;
+    border: 2px solid rgba(255, 255, 255, 0.8);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    user-select: none;
+    pointer-events: auto;
+    color: white;
+    font-weight: bold;
+    font-size: 18px;
+    text-shadow: 1px 1px 2px black;
+}
+
+.utility-btn:active {
+    background-color: rgba(150, 150, 150, 0.9);
+    transform: scale(0.95);
+}
+
 /* 文字與冷卻狀態 */
 .skill-name {
     margin-top: 5px;
@@ -77,8 +100,15 @@
     pointer-events: none !important;
 }
 
-/* 扇形排列座標 */
-#wrap-atk { bottom: 10px; right: 10px; }
-#wrap-a   { bottom: 120px; right: 10px; }
-#wrap-b   { bottom: 95px; right: 95px; }
-#wrap-c   { bottom: 10px; right: 120px; }
+/* === 座標重新編排 === */
+/* 基礎普攻 (右下角基準) */
+#wrap-atk { bottom: 20px; right: 20px; }
+
+/* 輔助按鈕 (內圈) */
+#wrap-jump { bottom: 125px; right: 35px; } /* 普攻正上方附近 */
+#wrap-dash { bottom: 10px; right: 115px; } /* 普攻左下方 */
+
+/* 技能按鍵 (外環扇形) */
+#wrap-a   { bottom: 190px; right: 70px; }  /* 右上 */
+#wrap-b   { bottom: 145px; right: 150px; } /* 中上 */
+#wrap-c   { bottom: 75px; right: 190px; }  /* 左方 */
