@@ -1,4 +1,11 @@
 <div id="action-ui-zone">
+    <div class="skill-wrapper" id="wrap-jump">
+        <div id="btn-jump" class="utility-btn">跳</div>
+    </div>
+    <div class="skill-wrapper" id="wrap-dash">
+        <div id="btn-dash" class="utility-btn">衝</div>
+    </div>
+
     <div class="skill-wrapper" id="wrap-c">
         <div id="slot-3" class="skill-btn"><span class="cd-text"></span></div>
         <div class="skill-name" id="name-slot-3">--</div>
@@ -11,6 +18,7 @@
         <div id="slot-1" class="skill-btn"><span class="cd-text"></span></div>
         <div class="skill-name" id="name-slot-1">--</div>
     </div>
+    
     <div class="skill-wrapper" id="wrap-atk">
         <div id="slot-atk" class="atk-btn"><span class="cd-text"></span></div>
         <div class="skill-name" id="name-slot-atk">--</div>
