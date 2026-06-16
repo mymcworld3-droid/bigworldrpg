@@ -355,6 +355,24 @@ SkillSystem.prototype.update = function(dt) {
                 if (this.app.renderLine) this.app.renderLine(p1, p2, this.debugColor);
                 else if (this.app.drawLine) this.app.drawLine(p1, p2, this.debugColor);
             }
+        } else if (dbg.type === 'circle') {
+            var drawCenter = new pc.Vec3(dbg.center.x, dbg.center.y + 0.1, dbg.center.z);
+            var segmentsC = 20;
+            var stepC = (Math.PI * 2) / segmentsC;
+            var prevPointC = null;
+            for (var j = 0; j <= segmentsC; j++) {
+                var angle = stepC * j;
+                var arcPointC = new pc.Vec3(
+                    drawCenter.x + Math.cos(angle) * dbg.radius,
+                    drawCenter.y,
+                    drawCenter.z + Math.sin(angle) * dbg.radius
+                );
+                if (prevPointC) {
+                    if (this.app.renderLine) this.app.renderLine(prevPointC, arcPointC, this.debugColor);
+                    else if (this.app.drawLine) this.app.drawLine(prevPointC, arcPointC, this.debugColor);
+                }
+                prevPointC = arcPointC;
+            }
         }
     }
 };
