@@ -12,6 +12,9 @@ Monster.prototype.initialize = function() {
     this.isCasting = false;
     this.moveSpeed = 2.0; // 怪物移動速度
 
+    this.screenPos = new pc.Vec3(); 
+    this.monsterPos = new pc.Vec3();
+
     if (this.configData) {
         var data = (typeof this.configData.resource === 'string') ? JSON.parse(this.configData.resource) : this.configData.resource;
         this.db = data;
