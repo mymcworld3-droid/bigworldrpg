@@ -43,6 +43,20 @@ AttackButton.prototype.initialize = function() {
 
     // 監聽來自技能系統的成功釋放事件 (觸發 CD)
     this.app.on('skill:started', this.startCooldown, this);
+
+    // 綁定跳躍按鍵
+    var btnJump = document.getElementById('btn-jump');
+    if (btnJump) {
+        btnJump.addEventListener('touchstart', this.onJump.bind(this), { passive: false });
+        btnJump.addEventListener('mousedown', this.onJump.bind(this));
+    }
+
+    // 綁定衝刺按鍵
+    var btnDash = document.getElementById('btn-dash');
+    if (btnDash) {
+        btnDash.addEventListener('touchstart', this.onDash.bind(this), { passive: false });
+        btnDash.addEventListener('mousedown', this.onDash.bind(this));
+    }
 };
 
 // 初始化單一插槽
