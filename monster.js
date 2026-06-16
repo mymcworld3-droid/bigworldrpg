@@ -12,6 +12,7 @@ Monster.prototype.initialize = function() {
     this.isCasting = false;
     this.moveSpeed = 2.0; // 怪物移動速度
 
+    // ===== 核心修正：確保在 initialize 最一開始建立螢幕座標轉換向量 =====
     this.screenPos = new pc.Vec3(); 
     this.monsterPos = new pc.Vec3();
 
@@ -38,16 +39,72 @@ Monster.prototype.initialize = function() {
 };
 
 Monster.prototype.createHpBar = function() {
-    // ... 保留原本 createHpBar 裡所有的動態建立 UI 邏輯，不作修改 ...
-    // 為了節省版面，此處省略你原本寫好的 UI CSS 與 DOM 建立代碼
-    // 請複製你原本 monster.js 中 createHpBar 的內容貼上即可
+    // 完整的動態 UI 注入 (包含 CSS 樣式與動畫)
+    if (!document.getElementById('monster-ui-style')) {
+        var style = document.createElement('style');
+        style.id = 'monster-ui-style';
+        style.innerHTML = `
+            .hp-bar-bg {
+                position: absolute;
+                width: 60px;
+                height: 6px;
+                background-color: rgba(0, 0, 0, 0.5);
+                border: 1px solid rgba(255, 255, 255, 0.8);
+                border-radius: 3px;
+                pointer-events: none;
+                transform: translate(-50%, -50%);
+                z-index: 5;
+                display: none;
+            }
+            .hp-bar-fill {
+                width: 100%;
+                height: 100%;
+                background-color: #ff3333;
+                border-radius: 2px;
+                transition: width 0.1s ease-out;
+            }
+            @keyframes damageFloat {
+                0% { opacity: 1; transform: translate(-50%, -50%) scale(1.5); }
+                100% { opacity: 0; transform: translate(-50%, -150%) scale(1); }
+            }
+            .damage-text {
+                position: absolute;
+                color: #ff3333;
+                font-size: 24px;
+                font-weight: bold;
+                font-family: sans-serif;
+                text-shadow: -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000;
+                pointer-events: none;
+                z-index: 10;
+                animation: damageFloat 0.8s ease-out forwards;
+            }
+        `;
+        document.head.appendChild(style);
+    }
+
+    // 建立血條的 DOM 結構
+    this.hpBg = document.createElement('div');
+    this.hpBg.className = 'hp-bar-bg';
+    
+    this.hpFill = document.createElement('div');
+    this.hpFill.className = 'hp-bar-fill';
+    
+    this.hpBg.appendChild(this.hpFill);
+    document.body.appendChild(this.hpBg);
+
+    this.on('destroy', function() {
+        if (this.hpBg && this.hpBg.parentNode) {
+            this.hpBg.parentNode.removeChild(this.hpBg);
+        }
+    }, this);
 };
 
 Monster.prototype.update = function(dt) {
-    // 1. 更新血條 UI 位置 (保留原本邏輯)
+    // 1. 更新血條 UI 位置
     if (this.cameraEntity && this.hpBg) {
         this.monsterPos.copy(this.entity.getPosition());
         this.monsterPos.y += this.hpBarHeight;
+
         var cameraComponent = this.cameraEntity.camera;
         cameraComponent.worldToScreen(this.monsterPos, this.screenPos);
 
@@ -90,11 +147,11 @@ Monster.prototype.update = function(dt) {
             var sId = this.equippedSkills[i];
             if (this.skillCooldowns[sId] <= 0) {
                 this.castMonsterSkill(sId);
-                break; // 一次只放一招
+                break; 
             }
         }
     } else if (dist < 15) { 
-        // 在仇恨範圍內但摸不到，走向玩家
+        // 在仇恨範圍內，走向玩家
         this.entity.lookAt(playerPos.x, myPos.y, playerPos.z);
         var forward = this.entity.forward.clone();
         this.entity.rigidbody.linearVelocity = new pc.Vec3(forward.x * this.moveSpeed, this.entity.rigidbody.linearVelocity.y, forward.z * this.moveSpeed);
@@ -136,22 +193,19 @@ Monster.prototype.takeDamage = function(damage) {
 };
 
 Monster.prototype.showDamageText = function(damage) {
-    // 確保怪物在鏡頭前才顯示數字
-    if (this.screenPos.z > 0) {
+    // 確保怪物在鏡頭前，且 screenPos 存在才顯示數字
+    if (this.screenPos && this.screenPos.z > 0) {
         var dmgElem = document.createElement('div');
         dmgElem.className = 'damage-text';
-        dmgElem.innerText = damage; // 只顯示純數字
+        dmgElem.innerText = damage; 
         
-        // 加上一點隨機 X 軸偏移，避免連續攻擊時數字全部重疊在一起
         var offsetX = (Math.random() - 0.5) * 30;
         
         dmgElem.style.left = (this.screenPos.x + offsetX) + 'px';
-        // 數字初始高度稍微比血條低一點，然後往上飄
         dmgElem.style.top = (this.screenPos.y - 10) + 'px';
         
         document.body.appendChild(dmgElem);
 
-        // 配合 CSS 動畫時間 (0.8s)，動畫結束後自動把 DOM 元素清理掉
         setTimeout(function() {
             if (dmgElem.parentNode) {
                 dmgElem.parentNode.removeChild(dmgElem);
@@ -162,29 +216,22 @@ Monster.prototype.showDamageText = function(damage) {
 
 Monster.prototype.applyKnockback = function(direction, force) {
     if (!this.entity.rigidbody) return;
-
-    // 將 Y 軸抽離，確保只有水平方向的推力
     direction.y = 0;
     direction.normalize();
-
-    // 稍微給一點向上的推力，讓擊退看起來更自然
     var impulse = new pc.Vec3(
         direction.x * force,
         force * 0.5,
         direction.z * force
     );
-
     this.entity.rigidbody.applyImpulse(impulse);
 };
 
 Monster.prototype.die = function() {
     console.log(`[${this.entity.name}] 死亡！`);
-    
     if (this.hpBg && this.hpBg.parentNode) {
         this.hpBg.parentNode.removeChild(this.hpBg);
         this.hpBg = null;
     }
-    
     setTimeout(function() {
         this.entity.destroy();
     }.bind(this), 100);
