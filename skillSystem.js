@@ -37,6 +37,11 @@ SkillSystem.prototype.useSkill = function(skillId) {
     this.isCasting = true;
     console.log(`開始釋放技能：${skill.name}`);
 
+    // 計算 JSON 內定義的總時長 (施法時間 + 恢復時間 = 冷卻時間)
+    var totalDuration = skill.cooldown;
+    // 廣播給 AttackButton 介面去跑冷卻
+    this.app.fire('skill:started', skillId, totalDuration);
+
     if (skill.vfx_effect) {
         this.triggerVfx(skill.vfx_effect);
     }

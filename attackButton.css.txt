@@ -5,13 +5,19 @@
     width: 220px;
     height: 220px;
     touch-action: none;
-    pointer-events: none; /* 讓透明區域的觸控能穿透給相機運作 */
+    pointer-events: none;
 }
 
-#attack-btn {
+.skill-wrapper {
     position: absolute;
-    bottom: 10px;
-    right: 10px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    pointer-events: none;
+}
+
+/* 普攻按鍵專屬樣式 */
+.atk-btn {
     width: 90px;
     height: 90px;
     background-color: rgba(255, 50, 50, 0.6);
@@ -20,21 +26,17 @@
     display: flex;
     justify-content: center;
     align-items: center;
-    color: white;
-    font-weight: bold;
-    font-size: 18px;
-    font-family: sans-serif;
     user-select: none;
-    pointer-events: auto; /* 恢復實體按鍵的觸控攔截 */
+    pointer-events: auto;
 }
 
-#attack-btn:active {
+.atk-btn:active {
     background-color: rgba(255, 50, 50, 0.9);
     transform: scale(0.95);
 }
 
+/* 通用技能按鍵樣式 */
 .skill-btn {
-    position: absolute;
     width: 60px;
     height: 60px;
     background-color: rgba(50, 150, 255, 0.6);
@@ -43,10 +45,6 @@
     display: flex;
     justify-content: center;
     align-items: center;
-    color: white;
-    font-weight: bold;
-    font-size: 14px;
-    font-family: sans-serif;
     user-select: none;
     pointer-events: auto;
 }
@@ -56,18 +54,31 @@
     transform: scale(0.95);
 }
 
+/* 文字與冷卻狀態 */
+.skill-name {
+    margin-top: 5px;
+    color: white;
+    font-weight: bold;
+    font-size: 14px;
+    font-family: sans-serif;
+    text-shadow: 1px 1px 2px black;
+}
+
+.cd-text {
+    color: white;
+    font-weight: bold;
+    font-size: 22px;
+    font-family: sans-serif;
+    text-shadow: 1px 1px 3px black;
+}
+
+.on-cd {
+    filter: brightness(0.4);
+    pointer-events: none !important;
+}
+
 /* 扇形排列座標 */
-#skill-a-btn {
-    bottom: 120px;
-    right: 10px;
-}
-
-#skill-b-btn {
-    bottom: 95px;
-    right: 95px;
-}
-
-#skill-c-btn {
-    bottom: 10px;
-    right: 120px;
-}
+#wrap-atk { bottom: 10px; right: 10px; }
+#wrap-a   { bottom: 120px; right: 10px; }
+#wrap-b   { bottom: 95px; right: 95px; }
+#wrap-c   { bottom: 10px; right: 120px; }
