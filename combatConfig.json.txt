@@ -160,6 +160,6 @@
         }
     },
     "monsters": {
-        "goblin": { "hp": 100, "strength": 15, "defense": 5, "spirit": 10 }
+        "goblin": { "hp": 100, "strength": 100, "defense": 50, "spirit": 10 }
     }
 }
