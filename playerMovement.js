@@ -20,6 +20,8 @@ PlayerMovement.prototype.initialize = function() {
     this.app.on('joystick:move', this.onJoystickMove, this);
     this.app.on('joystick:end', this.onJoystickEnd, this);
     this.app.on('player:dash', this.onDash, this);
+    this.app.on('action:jump', this.onActionJump, this);
+    this.app.on('action:dash', this.onActionDash, this);
 };
 
 PlayerMovement.prototype.onDash = function(forward, speed, duration) {
@@ -90,4 +92,33 @@ PlayerMovement.prototype.update = function(dt) {
     } else {
         this.entity.rigidbody.linearVelocity = new pc.Vec3(0, safeYVelocity, 0);
     }
+};
+
+PlayerMovement.prototype.onActionJump = function() {
+    if (!this.entity.rigidbody) return;
+    
+    var currentVelocity = this.entity.rigidbody.linearVelocity;
+    
+    // 簡單防呆判定：只在接近地面（Y軸速度很小）時才允許起跳，防止無限二段跳
+    if (Math.abs(currentVelocity.y) < 0.5) {
+        // 直接賦予向上的速度 (這裡 6 為起跳力度，可根據手感自行微調)
+        this.entity.rigidbody.linearVelocity = new pc.Vec3(
+            currentVelocity.x, 
+            6, 
+            currentVelocity.z
+        );
+    }
+};
+
+PlayerMovement.prototype.onActionDash = function() {
+    // 若正在衝刺中則不可重複觸發
+    if (!this.entity.rigidbody || this.dashTimer > 0) return;
+    
+    // 獲取玩家模型當前的面朝方向
+    var forward = this.visualEntity ? this.visualEntity.forward.clone() : this.entity.forward.clone();
+    forward.y = 0;
+    forward.normalize();
+    
+    // 呼叫原本寫好的 onDash 方法 (方向, 衝刺速度, 持續時間)
+    this.onDash(forward, 15, 0.2);
 };
