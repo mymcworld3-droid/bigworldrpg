@@ -358,3 +358,100 @@ SkillSystem.prototype.update = function(dt) {
         }
     }
 };
+
+// ====== 新增：怪物技能與玩家受擊系統 ======
+
+SkillSystem.prototype.useMonsterSkill = function(monsterEntity, skillId) {
+    if (!this.db || !monsterEntity) return;
+    var skill = this.db.monster_skills[skillId];
+    if (!skill) return;
+
+    console.log(`[怪物 AI] ${monsterEntity.name} 發動了技能：${skill.name}`);
+
+    if (skill.range_shapes) {
+        for (var i = 0; i < skill.range_shapes.length; i++) {
+            var shape = skill.range_shapes[i];
+            // 根據 JSON 中的 damage_time 排程傷害判定
+            setTimeout(function(sh) {
+                if (!monsterEntity || !monsterEntity.parent) return; // 防止怪物已死但技能還爆出來
+                this.checkMonsterCollision(monsterEntity, skillId, sh);
+            }.bind(this, shape), shape.damage_time * 1000);
+        }
+    }
+};
+
+SkillSystem.prototype.checkMonsterCollision = function(monsterEntity, skillId, shape) {
+    if (!this.playerEntity || this.playerHp <= 0) return;
+
+    var monsterPos = monsterEntity.getPosition().clone();
+    var monsterForward = monsterEntity.forward.clone();
+    monsterForward.y = 0;
+    monsterForward.normalize();
+
+    var playerPos = this.playerEntity.getPosition().clone();
+    var isHit = false;
+
+    // 判定 1：扇形判定 (哥布林敲擊)
+    if (shape.shape_type === 'fan') {
+        if (this.debugDraw) this.addDebugFan(monsterPos.clone(), monsterForward.clone(), shape.radius, shape.angle, 0.5);
+        
+        var dist = monsterPos.distance(playerPos);
+        if (dist <= shape.radius) {
+            var dirToPlayer = new pc.Vec3().sub2(playerPos, monsterPos);
+            dirToPlayer.y = 0;
+            dirToPlayer.normalize();
+            var dotProduct = monsterForward.dot(dirToPlayer);
+            var angleReq = Math.cos((shape.angle / 2) * pc.math.DEG_TO_RAD);
+            if (dotProduct >= angleReq) isHit = true;
+        }
+    } 
+    // 判定 2：圓形範圍判定 (哥布林蓄力砸)
+    else if (shape.shape_type === 'circle') {
+        var center = monsterPos.clone();
+        var offset = new pc.Vec3(shape.offset.x, 0, shape.offset.z);
+        // 將局部 offset 轉為世界座標
+        var q = monsterEntity.getRotation();
+        q.transformVector(offset, offset);
+        center.add(offset);
+        
+        if (this.debugDraw) this.addDebugCircle(center.clone(), shape.radius, 0.5);
+
+        if (center.distance(playerPos) <= shape.radius) {
+            isHit = true;
+        }
+    }
+
+    if (isHit) {
+        this.applyMonsterDamageToPlayer(monsterEntity, skillId);
+    }
+};
+
+SkillSystem.prototype.applyMonsterDamageToPlayer = function(monsterEntity, skillId) {
+    var monsterId = monsterEntity.script.monster.monsterId;
+    var monsterStats = this.db.monsters[monsterId];
+    var playerStats = this.db.classes[this.currentClass];
+    var skill = this.db.monster_skills[skillId];
+
+    var rawDamage = 0;
+    if (skill.stat_scaling && skill.stat_scaling.strength) {
+        rawDamage = monsterStats.strength * skill.stat_scaling.strength;
+    }
+
+    // 同樣套用減法公式：最終傷害 = 怪物力量 * 技能倍率 - 玩家防禦
+    var finalDamage = Math.max(1, rawDamage - playerStats.defense);
+    finalDamage = Math.floor(finalDamage);
+
+    this.playerHp -= finalDamage;
+    console.log(`[玩家受擊] 吃到 ${skill.name}，損失 ${finalDamage} 點血量。剩餘血量: ${this.playerHp}`);
+
+    if (this.playerHp <= 0) {
+        console.log("【玩家死亡！遊戲結束】");
+        // 你可以在這裡加入 app.fire('game:over') 叫出死亡結算畫面
+    }
+};
+
+SkillSystem.prototype.addDebugCircle = function(center, radius, duration) {
+    this.debugDrawings.push({
+        type: 'circle', center: center, radius: radius, timer: duration
+    });
+};
