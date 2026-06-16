@@ -6,21 +6,26 @@ SkillSystem.attributes.add('debugDraw', { type: 'boolean', default: true, title:
 
 SkillSystem.prototype.initialize = function() {
     if (this.configData) {
-        if (typeof this.configData.resource === 'string') {
-            this.db = JSON.parse(this.configData.resource);
-        } else {
-            this.db = this.configData.resource;
-        }
+        var data = (typeof this.configData.resource === 'string') ? JSON.parse(this.configData.resource) : this.configData.resource;
+        this.db = data;
     }
     
     this.isCasting = false;
     this.currentClass = 'warrior';
     
+    // 初始化玩家血量
+    if (this.db) {
+        this.playerHp = this.db.classes[this.currentClass].hp;
+    } else {
+        this.playerHp = 100;
+    }
+    
     this.debugDrawings = [];
-    this.activeProjectiles = []; // 新增：用於管理旋風斬之類的獨立飛行物
+    this.activeProjectiles = [];
     this.debugColor = new pc.Color(1, 0, 0, 1);
     
     this.app.on('skill:cast', this.useSkill, this);
+    this.app.on('monster:cast', this.useMonsterSkill, this); // 新增：監聽怪物的攻擊
 };
 
 SkillSystem.prototype.useSkill = function(skillId) {
