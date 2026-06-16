@@ -136,3 +136,17 @@ AttackButton.prototype.changeSkillBinding = function(slotId, newSkillId) {
         }
     }
 };
+
+AttackButton.prototype.onJump = function(e) {
+    e.preventDefault();
+    e.stopPropagation();
+    // 廣播跳躍指令給負責移動的腳本
+    this.app.fire('action:jump');
+};
+
+AttackButton.prototype.onDash = function(e) {
+    e.preventDefault();
+    e.stopPropagation();
+    // 廣播衝刺指令給負責移動的腳本
+    this.app.fire('action:dash');
+};
